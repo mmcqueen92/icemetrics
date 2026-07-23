@@ -56,6 +56,8 @@ Acceptance:
 
 ## Pass 3: Database Foundation
 
+**Status:** Implemented and locally verified on 2026-07-23.
+
 Deliver the full Prisma schema, reviewed initial migration, constraints,
 indexes, deterministic seed, and migration tests.
 

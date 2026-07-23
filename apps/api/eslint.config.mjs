@@ -8,8 +8,17 @@ export default tseslint.config(
     ignores: ['coverage/**', 'dist/**', 'eslint.config.mjs', 'openapi/**'],
   },
   eslint.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  ...tseslint.configs.recommendedTypeChecked.map((configuration) => ({
+    ...configuration,
+    files: ['**/*.ts'],
+  })),
   prettier,
+  {
+    files: ['**/*.{js,mjs}'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
   {
     files: ['**/*.ts'],
     languageOptions: {

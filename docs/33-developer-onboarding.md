@@ -17,8 +17,8 @@ conflict in the same change before implementing either interpretation.
 2. Clone the repository.
 3. Copy `.env.example` to `.env`.
 4. Run `npm ci`.
-5. Start PostgreSQL.
-6. apply migrations and seed data.
+5. Run `npm run docker:up`.
+6. Run `npm run db:migrate` and `npm run db:seed`.
 7. Run `npm run dev`.
 8. Verify both health endpoints and the Angular home page.
 9. Run `npm run test:unit`.

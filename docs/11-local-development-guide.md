@@ -14,14 +14,18 @@ A separately installed PostgreSQL server is not required.
 ```text
 npm ci
 npm run docker:up
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
 `npm run dev` runs API and Angular development servers concurrently and stops
 both when the command exits.
 
-Pass 3 adds `npm run db:migrate` and `npm run db:seed` to this bootstrap after
-the Prisma schema and initial migration exist.
+`db:migrate` is the development migration command. Clean environments and
+deployments may use `db:migrate:deploy` when they only need to apply committed
+migrations. Prisma CLI commands load the root `.env`; production still requires
+an explicitly supplied `DATABASE_URL`.
 
 ## Root Command Contract
 
@@ -74,7 +78,8 @@ introduced.
 ## Safety
 
 - `db:reset` refuses to run unless `NODE_ENV=development` and the database host
-  is local.
+  is local, and requires the developer to type `RESET`.
+- `db:seed` refuses to run when either `NODE_ENV` or `APP_ENV` is production.
 - Docker volume removal is never part of `docker:down`.
 - Integration suites create disposable PostgreSQL 17 containers with unique
   credentials and do not use the persistent Compose database.

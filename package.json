@@ -16,11 +16,11 @@
   "packageManager": "npm@11.16.0",
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "db:generate": "node scripts/pass-not-ready.mjs \"Pass 3\" \"database generation\"",
-    "db:migrate": "node scripts/pass-not-ready.mjs \"Pass 3\" \"database migrations\"",
-    "db:migrate:deploy": "node scripts/pass-not-ready.mjs \"Pass 3\" \"deployed database migrations\"",
-    "db:reset": "node scripts/pass-not-ready.mjs \"Pass 3\" \"local database reset\"",
-    "db:seed": "node scripts/pass-not-ready.mjs \"Pass 3\" \"database seeding\"",
+    "db:generate": "npm run db:generate --workspace @icemetrics/api",
+    "db:migrate": "npm run db:migrate --workspace @icemetrics/api",
+    "db:migrate:deploy": "npm run db:migrate:deploy --workspace @icemetrics/api",
+    "db:reset": "npm run db:reset --workspace @icemetrics/api",
+    "db:seed": "npm run db:seed --workspace @icemetrics/api",
     "dev": "concurrently --kill-others --names api,web --prefix-colors blue,magenta \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "npm run dev --workspace @icemetrics/api",
     "dev:web": "npm run dev --workspace @icemetrics/web",
@@ -40,13 +40,14 @@
     "test:integration": "npm run test:integration --workspace @icemetrics/api",
     "test:unit": "npm run test:unit --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run openapi:check && npm run build"
+    "verify": "npm run db:generate && npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run openapi:check && npm run build"
   },
   "devDependencies": {
     "concurrently": "10.0.3",
     "prettier": "3.9.6"
   },
   "allowScripts": {
+    "@prisma/engines@7.3.0": true,
     "esbuild@0.28.1": true,
     "esbuild@0.27.7": true,
     "@parcel/watcher": false,
@@ -54,6 +55,7 @@
     "lmdb": false,
     "msgpackr-extract": false,
     "protobufjs": false,
+    "prisma@7.3.0": true,
     "ssh2": false
   }
 }

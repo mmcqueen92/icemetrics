@@ -1,9 +1,10 @@
 # IceMetrics
 
 IceMetrics is a production-style NHL analytics platform built as a TypeScript
-monorepo. The repository currently contains the Pass 2 foundation: a NestJS
+monorepo. The repository currently contains the Pass 3 foundation: a NestJS
 modular-monolith API/job runner, an Angular standalone web application,
-containerized PostgreSQL, health checks, isolated integration tests, and CI.
+containerized PostgreSQL, a migration-backed Prisma data model, deterministic
+development fixtures, health checks, isolated integration tests, and CI.
 
 The project documentation in [`docs/`](docs/) is the source of truth. Read
 [`AGENTS.md`](AGENTS.md) before making implementation or architecture changes.
@@ -23,6 +24,8 @@ The repository enforces Node `>=24.18.0 <25` and npm `>=11.16.0 <12`.
 Copy-Item .env.example .env
 npm ci
 npm run docker:up
+npm run db:migrate
+npm run db:seed
 npm run dev
 ```
 
@@ -59,23 +62,28 @@ PostgreSQL 17 container for each suite.
 
 ## Root Commands
 
-| Command                    | Purpose                                     |
-| -------------------------- | ------------------------------------------- |
-| `npm run dev`              | Run API and web development servers         |
-| `npm run dev:api`          | Run the NestJS API watcher                  |
-| `npm run dev:web`          | Run the Angular development server          |
-| `npm run build`            | Build all implemented workspaces            |
-| `npm run lint`             | Lint all implemented workspaces             |
-| `npm run typecheck`        | Type-check all implemented workspaces       |
-| `npm run test:unit`        | Run unit and component tests                |
-| `npm run test:integration` | Run isolated PostgreSQL/API tests           |
-| `npm run docker:up`        | Start and wait for local PostgreSQL         |
-| `npm run docker:down`      | Stop PostgreSQL without deleting its data   |
-| `npm run security:audit`   | Fail on critical dependency vulnerabilities |
-| `npm run format`           | Format tracked source/configuration files   |
-| `npm run format:check`     | Verify formatting                           |
-| `npm run openapi:generate` | Regenerate the checked OpenAPI document     |
-| `npm run openapi:check`    | Fail when OpenAPI output has drifted        |
+| Command                     | Purpose                                     |
+| --------------------------- | ------------------------------------------- |
+| `npm run dev`               | Run API and web development servers         |
+| `npm run dev:api`           | Run the NestJS API watcher                  |
+| `npm run dev:web`           | Run the Angular development server          |
+| `npm run build`             | Build all implemented workspaces            |
+| `npm run lint`              | Lint all implemented workspaces             |
+| `npm run typecheck`         | Type-check all implemented workspaces       |
+| `npm run test:unit`         | Run unit and component tests                |
+| `npm run test:integration`  | Run isolated PostgreSQL/API tests           |
+| `npm run db:generate`       | Generate the Prisma client                  |
+| `npm run db:migrate`        | Create/apply a development migration        |
+| `npm run db:migrate:deploy` | Apply committed migrations                  |
+| `npm run db:seed`           | Apply deterministic development fixtures    |
+| `npm run db:reset`          | Confirm and reset a local development DB    |
+| `npm run docker:up`         | Start and wait for local PostgreSQL         |
+| `npm run docker:down`       | Stop PostgreSQL without deleting its data   |
+| `npm run security:audit`    | Fail on critical dependency vulnerabilities |
+| `npm run format`            | Format tracked source/configuration files   |
+| `npm run format:check`      | Verify formatting                           |
+| `npm run openapi:generate`  | Regenerate the checked OpenAPI document     |
+| `npm run openapi:check`     | Fail when OpenAPI output has drifted        |
 
 Other commands belonging to later passes remain reserved in `package.json` and
 fail with a message naming the pass that implements them. They must not report
@@ -93,10 +101,13 @@ scripts/  Repository-level automation
 
 ## Current Scope
 
-Pass 2 includes workspace tooling, strict TypeScript, formatting, linting,
+Pass 3 includes workspace tooling, strict TypeScript, formatting, linting,
 Vitest, environment validation, OpenAPI drift checking, production builds,
 PostgreSQL 17 Compose infrastructure, health endpoints, Testcontainers,
-GitHub Actions, Dependabot, dependency auditing, and secret scanning.
+GitHub Actions, Dependabot, dependency auditing, secret scanning, the complete
+Prisma schema, reviewed SQL migrations, database constraints and indexes,
+deterministic seed data, and migration/constraint integration tests.
 
-It deliberately excludes Prisma/domain models, hockey features, authentication,
-ingestion, analytics, browser end-to-end tests, and deployment infrastructure.
+It deliberately excludes product API endpoints, authentication, ingestion
+behavior, analytics calculations, browser end-to-end tests, and deployment
+infrastructure.

@@ -19,6 +19,9 @@ or API integration tests.
 - Provider adapter tests use committed JSON fixtures and a controlled fake HTTP
   server; CI never depends on live NHL endpoints.
 - Integration tests migrate a fresh PostgreSQL database.
+- Database foundation tests apply the committed migration, run the deterministic
+  seed twice, and exercise uniqueness, check, and cross-table integrity
+  constraints against PostgreSQL 17.
 - End-to-end tests use deterministic seeded data and built applications.
 - External Render smoke tests are a separate deployment check, not part of the
   deterministic unit suite.

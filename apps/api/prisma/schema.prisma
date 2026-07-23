@@ -1,0 +1,519 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["analytics", "core", "ops", "raw"]
+}
+
+enum GameStatus {
+  SCHEDULED
+  PRE_GAME
+  LIVE
+  FINAL
+  POSTPONED
+  CANCELLED
+
+  @@map("game_status")
+  @@schema("core")
+}
+
+enum GameType {
+  PRESEASON
+  REGULAR_SEASON
+  PLAYOFF
+  ALL_STAR
+
+  @@map("game_type")
+  @@schema("core")
+}
+
+enum DecisionType {
+  REGULATION
+  OVERTIME
+  SHOOTOUT
+
+  @@map("decision_type")
+  @@schema("core")
+}
+
+enum PayloadStatus {
+  FETCHED
+  VALIDATED
+  PROCESSED
+  REJECTED
+
+  @@map("payload_status")
+  @@schema("raw")
+}
+
+enum JobType {
+  TEAMS
+  PLAYERS
+  SCHEDULE
+  GAME_STATISTICS
+  STANDINGS
+  ANALYTICS
+  DISPATCH
+
+  @@map("job_type")
+  @@schema("ops")
+}
+
+enum JobTrigger {
+  SCHEDULED
+  MANUAL
+  REPLAY
+
+  @@map("job_trigger")
+  @@schema("ops")
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+  SKIPPED
+
+  @@map("job_status")
+  @@schema("ops")
+}
+
+enum IssueSeverity {
+  WARNING
+  ERROR
+
+  @@map("issue_severity")
+  @@schema("ops")
+}
+
+enum MetricWindow {
+  SEASON
+  LAST_5
+  LAST_10
+  LAST_20
+
+  @@map("metric_window")
+  @@schema("analytics")
+}
+
+model ProviderPayload {
+  id                String        @id @default(uuid()) @db.Uuid
+  provider          String
+  resourceType      String        @map("resource_type")
+  externalKey       String        @map("external_key")
+  requestPath       String        @map("request_path")
+  requestParameters Json          @map("request_parameters") @db.JsonB
+  httpStatus        Int           @map("http_status")
+  contentType       String?       @map("content_type")
+  payload           Json?         @db.JsonB
+  bodyText          String?       @map("body_text")
+  checksum          String        @db.Char(64)
+  status            PayloadStatus @default(FETCHED)
+  fetchedAt         DateTime      @map("fetched_at") @db.Timestamptz(6)
+  processedAt       DateTime?     @map("processed_at") @db.Timestamptz(6)
+  jobExecutionId    String?       @map("job_execution_id") @db.Uuid
+
+  jobExecution JobExecution? @relation(fields: [jobExecutionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  importIssues ImportIssue[]
+
+  @@unique([provider, resourceType, externalKey, checksum], map: "uq_provider_payload_identity_checksum")
+  @@index([provider, resourceType, externalKey, fetchedAt(sort: Desc)], map: "ix_provider_payload_lookup_fetched_at")
+  @@index([status, fetchedAt], map: "ix_provider_payload_status_fetched_at")
+  @@index([jobExecutionId], map: "ix_provider_payload_job_execution_id")
+  @@map("provider_payload")
+  @@schema("raw")
+}
+
+model League {
+  id        String   @id @default(uuid()) @db.Uuid
+  code      String   @unique(map: "uq_league_code")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  seasons            Season[]
+  teams              Team[]
+  providerIdentities LeagueProviderIdentity[]
+
+  @@map("league")
+  @@schema("core")
+}
+
+model Season {
+  id        String   @id @default(uuid()) @db.Uuid
+  leagueId  String   @map("league_id") @db.Uuid
+  label     String
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime @map("end_date") @db.Date
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  league             League                   @relation(fields: [leagueId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  games              Game[]
+  providerIdentities SeasonProviderIdentity[]
+  standingSnapshots  TeamStandingSnapshot[]
+  playerMetrics      PlayerMetricSnapshot[]
+  teamMetrics        TeamMetricSnapshot[]
+  teamRankings       TeamRankingSnapshot[]
+
+  @@unique([leagueId, label], map: "uq_season_league_id_label")
+  @@map("season")
+  @@schema("core")
+}
+
+model Team {
+  id           String   @id @default(uuid()) @db.Uuid
+  leagueId     String   @map("league_id") @db.Uuid
+  name         String
+  abbreviation String
+  city         String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  league             League                 @relation(fields: [leagueId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  currentPlayers     Player[]
+  homeGames          Game[]                 @relation("HomeTeam")
+  awayGames          Game[]                 @relation("AwayTeam")
+  playerGameStats    PlayerGameStat[]
+  teamGameStats      TeamGameStat[]
+  providerIdentities TeamProviderIdentity[]
+  standingSnapshots  TeamStandingSnapshot[]
+  metricSnapshots    TeamMetricSnapshot[]
+  rankingSnapshots   TeamRankingSnapshot[]
+
+  @@unique([leagueId, abbreviation], map: "uq_team_league_id_abbreviation")
+  @@index([leagueId, active], map: "ix_team_league_id_active")
+  @@map("team")
+  @@schema("core")
+}
+
+model Player {
+  id            String    @id @default(uuid()) @db.Uuid
+  currentTeamId String?   @map("current_team_id") @db.Uuid
+  firstName     String    @map("first_name")
+  lastName      String    @map("last_name")
+  position      String?
+  shootsCatches String?   @map("shoots_catches")
+  birthDate     DateTime? @map("birth_date") @db.Date
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  currentTeam        Team?                    @relation(fields: [currentTeamId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  gameStats          PlayerGameStat[]
+  providerIdentities PlayerProviderIdentity[]
+  metricSnapshots    PlayerMetricSnapshot[]
+
+  @@index([currentTeamId, active], map: "ix_player_current_team_id_active")
+  @@map("player")
+  @@schema("core")
+}
+
+model Game {
+  id           String        @id @default(uuid()) @db.Uuid
+  seasonId     String        @map("season_id") @db.Uuid
+  homeTeamId   String        @map("home_team_id") @db.Uuid
+  awayTeamId   String        @map("away_team_id") @db.Uuid
+  startsAt     DateTime      @map("starts_at") @db.Timestamptz(6)
+  gameType     GameType      @map("game_type")
+  status       GameStatus
+  venue        String?
+  homeScore    Int?          @map("home_score")
+  awayScore    Int?          @map("away_score")
+  decisionType DecisionType? @map("decision_type")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  season              Season                 @relation(fields: [seasonId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  homeTeam            Team                   @relation("HomeTeam", fields: [homeTeamId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  awayTeam            Team                   @relation("AwayTeam", fields: [awayTeamId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  playerStats         PlayerGameStat[]
+  teamStats           TeamGameStat[]
+  providerIdentities  GameProviderIdentity[]
+  playerMetricCutoffs PlayerMetricSnapshot[]
+  teamMetricCutoffs   TeamMetricSnapshot[]
+
+  @@unique([seasonId, homeTeamId, awayTeamId, startsAt], map: "uq_game_season_teams_starts_at")
+  @@index([seasonId, startsAt(sort: Desc)], map: "ix_game_season_id_starts_at")
+  @@index([homeTeamId, startsAt(sort: Desc)], map: "ix_game_home_team_id_starts_at")
+  @@index([awayTeamId, startsAt(sort: Desc)], map: "ix_game_away_team_id_starts_at")
+  @@index([status, startsAt], map: "ix_game_status_starts_at")
+  @@map("game")
+  @@schema("core")
+}
+
+model PlayerGameStat {
+  id               String   @id @default(uuid()) @db.Uuid
+  gameId           String   @map("game_id") @db.Uuid
+  playerId         String   @map("player_id") @db.Uuid
+  teamId           String   @map("team_id") @db.Uuid
+  goals            Int
+  assists          Int
+  shots            Int
+  penaltyMinutes   Int      @map("penalty_minutes")
+  plusMinus        Int      @map("plus_minus")
+  powerPlayGoals   Int      @map("power_play_goals")
+  shortHandedGoals Int      @map("short_handed_goals")
+  timeOnIceSeconds Int      @map("time_on_ice_seconds")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([gameId, playerId], map: "uq_player_game_stat_game_id_player_id")
+  @@index([playerId, gameId], map: "ix_player_game_stat_player_id_game_id")
+  @@index([teamId, gameId], map: "ix_player_game_stat_team_id_game_id")
+  @@map("player_game_stat")
+  @@schema("core")
+}
+
+model TeamGameStat {
+  id                     String   @id @default(uuid()) @db.Uuid
+  gameId                 String   @map("game_id") @db.Uuid
+  teamId                 String   @map("team_id") @db.Uuid
+  goalsFor               Int      @map("goals_for")
+  goalsAgainst           Int      @map("goals_against")
+  shotsFor               Int      @map("shots_for")
+  shotsAgainst           Int      @map("shots_against")
+  powerPlayGoals         Int      @map("power_play_goals")
+  powerPlayOpportunities Int      @map("power_play_opportunities")
+  penaltyMinutes         Int      @map("penalty_minutes")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([gameId, teamId], map: "uq_team_game_stat_game_id_team_id")
+  @@index([teamId, gameId], map: "ix_team_game_stat_team_id_game_id")
+  @@map("team_game_stat")
+  @@schema("core")
+}
+
+model LeagueProviderIdentity {
+  id         String   @id @default(uuid()) @db.Uuid
+  provider   String
+  externalId String   @map("external_id")
+  leagueId   String   @map("league_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([provider, externalId], map: "uq_league_provider_identity_provider_external_id")
+  @@unique([provider, leagueId], map: "uq_league_provider_identity_provider_league_id")
+  @@map("league_provider_identity")
+  @@schema("core")
+}
+
+model SeasonProviderIdentity {
+  id         String   @id @default(uuid()) @db.Uuid
+  provider   String
+  externalId String   @map("external_id")
+  seasonId   String   @map("season_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([provider, externalId], map: "uq_season_provider_identity_provider_external_id")
+  @@unique([provider, seasonId], map: "uq_season_provider_identity_provider_season_id")
+  @@map("season_provider_identity")
+  @@schema("core")
+}
+
+model TeamProviderIdentity {
+  id         String   @id @default(uuid()) @db.Uuid
+  provider   String
+  externalId String   @map("external_id")
+  teamId     String   @map("team_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([provider, externalId], map: "uq_team_provider_identity_provider_external_id")
+  @@unique([provider, teamId], map: "uq_team_provider_identity_provider_team_id")
+  @@map("team_provider_identity")
+  @@schema("core")
+}
+
+model PlayerProviderIdentity {
+  id         String   @id @default(uuid()) @db.Uuid
+  provider   String
+  externalId String   @map("external_id")
+  playerId   String   @map("player_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([provider, externalId], map: "uq_player_provider_identity_provider_external_id")
+  @@unique([provider, playerId], map: "uq_player_provider_identity_provider_player_id")
+  @@map("player_provider_identity")
+  @@schema("core")
+}
+
+model GameProviderIdentity {
+  id         String   @id @default(uuid()) @db.Uuid
+  provider   String
+  externalId String   @map("external_id")
+  gameId     String   @map("game_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([provider, externalId], map: "uq_game_provider_identity_provider_external_id")
+  @@unique([provider, gameId], map: "uq_game_provider_identity_provider_game_id")
+  @@map("game_provider_identity")
+  @@schema("core")
+}
+
+model TeamStandingSnapshot {
+  id              String   @id @default(uuid()) @db.Uuid
+  seasonId        String   @map("season_id") @db.Uuid
+  teamId          String   @map("team_id") @db.Uuid
+  asOfDate        DateTime @map("as_of_date") @db.Date
+  gamesPlayed     Int      @map("games_played")
+  wins            Int
+  losses          Int
+  overtimeLosses  Int      @map("overtime_losses")
+  points          Int
+  goalsFor        Int      @map("goals_for")
+  goalsAgainst    Int      @map("goals_against")
+  leagueRank      Int      @map("league_rank")
+  conferenceRank  Int?     @map("conference_rank")
+  divisionRank    Int?     @map("division_rank")
+  pointPercentage Decimal  @map("point_percentage") @db.Decimal(12, 6)
+  sourceCutoff    DateTime @map("source_cutoff") @db.Timestamptz(6)
+  computedAt      DateTime @map("computed_at") @db.Timestamptz(6)
+  formulaVersion  String   @map("formula_version")
+
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([seasonId, teamId, asOfDate], map: "uq_team_standing_snapshot_season_team_date")
+  @@map("team_standing_snapshot")
+  @@schema("analytics")
+}
+
+model PlayerMetricSnapshot {
+  id             String       @id @default(uuid()) @db.Uuid
+  seasonId       String       @map("season_id") @db.Uuid
+  playerId       String       @map("player_id") @db.Uuid
+  metricCode     String       @map("metric_code")
+  window         MetricWindow
+  asOfGameId     String       @map("as_of_game_id") @db.Uuid
+  value          Decimal      @db.Decimal(12, 6)
+  sampleSize     Int          @map("sample_size")
+  formulaVersion String       @map("formula_version")
+  computedAt     DateTime     @map("computed_at") @db.Timestamptz(6)
+
+  season   Season @relation(fields: [seasonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  asOfGame Game   @relation(fields: [asOfGameId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([seasonId, playerId, metricCode, window, asOfGameId], map: "uq_player_metric_snapshot_identity")
+  @@index([playerId, metricCode, window, computedAt(sort: Desc)], map: "ix_player_metric_snapshot_lookup")
+  @@map("player_metric_snapshot")
+  @@schema("analytics")
+}
+
+model TeamMetricSnapshot {
+  id             String       @id @default(uuid()) @db.Uuid
+  seasonId       String       @map("season_id") @db.Uuid
+  teamId         String       @map("team_id") @db.Uuid
+  metricCode     String       @map("metric_code")
+  window         MetricWindow
+  asOfGameId     String       @map("as_of_game_id") @db.Uuid
+  value          Decimal      @db.Decimal(12, 6)
+  sampleSize     Int          @map("sample_size")
+  formulaVersion String       @map("formula_version")
+  computedAt     DateTime     @map("computed_at") @db.Timestamptz(6)
+
+  season   Season @relation(fields: [seasonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  team     Team   @relation(fields: [teamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  asOfGame Game   @relation(fields: [asOfGameId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([seasonId, teamId, metricCode, window, asOfGameId], map: "uq_team_metric_snapshot_identity")
+  @@index([teamId, metricCode, window, computedAt(sort: Desc)], map: "ix_team_metric_snapshot_lookup")
+  @@map("team_metric_snapshot")
+  @@schema("analytics")
+}
+
+model TeamRankingSnapshot {
+  id             String   @id @default(uuid()) @db.Uuid
+  seasonId       String   @map("season_id") @db.Uuid
+  teamId         String   @map("team_id") @db.Uuid
+  rankingCode    String   @map("ranking_code")
+  asOfDate       DateTime @map("as_of_date") @db.Date
+  rank           Int
+  score          Decimal  @db.Decimal(12, 6)
+  sampleSize     Int      @map("sample_size")
+  formulaVersion String   @map("formula_version")
+  computedAt     DateTime @map("computed_at") @db.Timestamptz(6)
+
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([seasonId, teamId, rankingCode, asOfDate], map: "uq_team_ranking_snapshot_identity")
+  @@index([seasonId, rankingCode, asOfDate, rank], map: "ix_team_ranking_snapshot_lookup")
+  @@map("team_ranking_snapshot")
+  @@schema("analytics")
+}
+
+model JobExecution {
+  id               String     @id @default(uuid()) @db.Uuid
+  jobType          JobType    @map("job_type")
+  trigger          JobTrigger
+  status           JobStatus  @default(PENDING)
+  scheduledFor     DateTime?  @map("scheduled_for") @db.Timestamptz(6)
+  requestedAt      DateTime   @default(now()) @map("requested_at") @db.Timestamptz(6)
+  startedAt        DateTime?  @map("started_at") @db.Timestamptz(6)
+  finishedAt       DateTime?  @map("finished_at") @db.Timestamptz(6)
+  attempt          Int        @default(1)
+  correlationId    String     @map("correlation_id") @db.Uuid
+  parameters       Json       @db.JsonB
+  cursor           Json?      @db.JsonB
+  recordsFetched   Int        @default(0) @map("records_fetched")
+  recordsCreated   Int        @default(0) @map("records_created")
+  recordsUpdated   Int        @default(0) @map("records_updated")
+  recordsUnchanged Int        @default(0) @map("records_unchanged")
+  recordsFailed    Int        @default(0) @map("records_failed")
+  errorSummary     Json?      @map("error_summary") @db.JsonB
+
+  providerPayloads ProviderPayload[]
+  importIssues     ImportIssue[]
+
+  @@index([correlationId], map: "ix_job_execution_correlation_id")
+  @@index([jobType, status, requestedAt(sort: Desc)], map: "ix_job_execution_type_status_requested_at")
+  @@map("job_execution")
+  @@schema("ops")
+}
+
+model ImportIssue {
+  id                String        @id @default(uuid()) @db.Uuid
+  jobExecutionId    String        @map("job_execution_id") @db.Uuid
+  providerPayloadId String?       @map("provider_payload_id") @db.Uuid
+  severity          IssueSeverity
+  code              String
+  entityType        String        @map("entity_type")
+  externalKey       String?       @map("external_key")
+  message           String
+  details           Json?         @db.JsonB
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  jobExecution    JobExecution     @relation(fields: [jobExecutionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  providerPayload ProviderPayload? @relation(fields: [providerPayloadId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([jobExecutionId], map: "ix_import_issue_job_execution_id")
+  @@index([providerPayloadId], map: "ix_import_issue_provider_payload_id")
+  @@index([code, createdAt(sort: Desc)], map: "ix_import_issue_code_created_at")
+  @@map("import_issue")
+  @@schema("ops")
+}
