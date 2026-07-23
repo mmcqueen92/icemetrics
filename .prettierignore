@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.angular
+playwright-report
+test-results
+AGENTS.md
+docs
+apps/api/openapi
+apps/web/src/app/core/api/generated
+package-lock.json

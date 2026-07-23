@@ -26,6 +26,8 @@ Acceptance:
 
 ## Pass 1: Workspace Foundation
 
+**Status:** Implemented and locally verified on 2026-07-22.
+
 Deliver the npm workspace, NestJS and Angular applications, strict TypeScript,
 formatting, linting, test runners, root commands, `.env.example`, and README.
 

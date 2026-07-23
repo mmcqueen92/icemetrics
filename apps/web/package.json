@@ -1,0 +1,43 @@
+{
+  "name": "@icemetrics/web",
+  "version": "0.1.0",
+  "description": "IceMetrics Angular web application",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24.18.0 <25",
+    "npm": ">=11.16.0 <12"
+  },
+  "scripts": {
+    "build": "ng build",
+    "dev": "ng serve --proxy-config proxy.conf.json",
+    "lint": "eslint .",
+    "test": "ng test --watch=false",
+    "test:unit": "ng test --watch=false",
+    "typecheck": "ng build --configuration development --no-progress"
+  },
+  "dependencies": {
+    "@angular/common": "22.0.8",
+    "@angular/compiler": "22.0.8",
+    "@angular/core": "22.0.8",
+    "@angular/forms": "22.0.8",
+    "@angular/platform-browser": "22.0.8",
+    "@angular/router": "22.0.8",
+    "rxjs": "7.8.2",
+    "tslib": "2.8.1"
+  },
+  "devDependencies": {
+    "@angular/build": "22.0.7",
+    "@angular/cli": "22.0.7",
+    "@angular/compiler-cli": "22.0.8",
+    "@eslint/js": "10.0.1",
+    "angular-eslint": "22.1.0",
+    "eslint": "10.7.0",
+    "eslint-config-prettier": "10.1.8",
+    "jsdom": "29.1.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.65.0",
+    "vitest": "4.1.10"
+  }
+}

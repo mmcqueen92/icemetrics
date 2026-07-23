@@ -55,6 +55,11 @@ The root `package.json` must provide:
 
 Workspace package names are `@icemetrics/api` and `@icemetrics/web`.
 
+During Pass 1, the OpenAPI commands generate and verify the endpoint-free API
+scaffold document. Pass 4 activates Angular client generation and extends the
+same drift check to that generated client when the first product contract is
+introduced.
+
 ## Local URLs
 
 - Angular: `http://localhost:4200`
