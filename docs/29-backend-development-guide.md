@@ -1,0 +1,69 @@
+# Backend Development Guide
+
+## Adding an Endpoint
+
+1. Add or update the endpoint contract in `docs/14-api-endpoints.md`.
+2. Define request and response DTOs with runtime validation and OpenAPI
+   annotations.
+3. Add a repository query with explicit selection, stable ordering, and bounded
+   pagination where applicable.
+4. Add service behavior and domain errors.
+5. Add the thin controller method.
+6. Add unit and API integration tests.
+7. Regenerate OpenAPI and the Angular client.
+8. Verify the contract drift check.
+
+## Controller Rules
+
+Controllers may:
+
+- bind and validate HTTP inputs;
+- call one application service operation; and
+- return DTOs.
+
+Controllers may not:
+
+- access Prisma;
+- implement filtering or calculation rules;
+- catch unexpected exceptions;
+- map provider responses; or
+- construct logs already handled by global infrastructure.
+
+## Service Rules
+
+Services:
+
+- implement use cases and business validation;
+- define transaction boundaries;
+- orchestrate repositories and approved cross-module services; and
+- return domain results that map cleanly to DTOs.
+
+Services do not depend on Express request or response objects.
+
+## Repository Rules
+
+Repositories:
+
+- encapsulate Prisma and SQL;
+- use explicit `select` clauses;
+- require deterministic ordering for lists;
+- avoid business decisions; and
+- expose intent-revealing methods rather than Prisma's generic API.
+
+Mock repositories in service unit tests. Use real PostgreSQL for repository and
+API integration tests.
+
+## Logging
+
+Log use-case outcomes at module boundaries, not every method call. Include
+`requestId` or `jobExecutionId`, entity IDs, duration, and result counts. Never
+log entire provider payloads, database URLs, secrets, or personal access tokens.
+
+## Completion Checklist
+
+- Contract and DTO agree.
+- Validation covers all inputs.
+- Success, empty, validation, and not-found behavior are tested.
+- Query plan is reasonable for the documented indexes.
+- OpenAPI and generated client are current.
+- No persistence or provider model escapes its layer.
