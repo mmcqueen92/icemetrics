@@ -46,6 +46,10 @@ values are supplied by their respective build/deployment environment.
   test configuration directly.
 - Angular environment source contains safe defaults only.
 
+`POSTGRES_PORT` configures only the local Docker Compose host binding and
+defaults to `5433`; PostgreSQL continues to listen on `5432` inside its
+container. `DATABASE_URL` must use the selected host port.
+
 The repository `.gitignore` must ignore `.env`, `.env.*`, and then explicitly
 allow `.env.example`.
 

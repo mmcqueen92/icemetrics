@@ -47,7 +47,11 @@ The MVP requires no `JWT_SECRET` or NHL API key.
 ## Supply Chain
 
 - Commit `package-lock.json` and use `npm ci`.
-- CI runs dependency audit reporting and secret scanning.
+- CI reports all npm audit findings and fails on critical severity. High and
+  lower findings remain visible for triage rather than receiving unsafe
+  automatic breaking upgrades.
+- CI scans repository history for verified secrets and reviews pull-request
+  dependency changes, failing on critical findings.
 - Dependabot proposes npm and GitHub Actions updates.
 - GitHub Actions dependencies are pinned to immutable commit SHAs.
 - Production containers run as a non-root user and contain only production

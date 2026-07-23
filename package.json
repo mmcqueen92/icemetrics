@@ -24,19 +24,20 @@
     "dev": "concurrently --kill-others --names api,web --prefix-colors blue,magenta \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "npm run dev --workspace @icemetrics/api",
     "dev:web": "npm run dev --workspace @icemetrics/web",
-    "docker:down": "node scripts/pass-not-ready.mjs \"Pass 2\" \"Docker Compose\"",
-    "docker:up": "node scripts/pass-not-ready.mjs \"Pass 2\" \"Docker Compose\"",
+    "docker:down": "docker compose down",
+    "docker:up": "docker compose up -d --wait postgres",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "jobs:dispatch": "node scripts/pass-not-ready.mjs \"Pass 6\" \"job dispatch\"",
     "jobs:replay": "node scripts/pass-not-ready.mjs \"Pass 6\" \"raw payload replay\"",
     "jobs:run": "node scripts/pass-not-ready.mjs \"Pass 6\" \"individual jobs\"",
     "lint": "npm run lint --workspaces --if-present",
-    "openapi:check": "node scripts/check-openapi.mjs",
+    "openapi:check": "npm run build --workspace @icemetrics/api && node scripts/check-openapi.mjs",
     "openapi:generate": "npm run openapi:generate --workspace @icemetrics/api",
+    "security:audit": "npm audit --audit-level=critical",
     "test": "npm run test:unit",
     "test:e2e": "node scripts/pass-not-ready.mjs \"Pass 10\" \"browser end-to-end testing\"",
-    "test:integration": "node scripts/pass-not-ready.mjs \"Pass 2\" \"PostgreSQL/API integration testing\"",
+    "test:integration": "npm run test:integration --workspace @icemetrics/api",
     "test:unit": "npm run test:unit --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run openapi:check && npm run build"
@@ -51,6 +52,8 @@
     "@parcel/watcher": false,
     "@scarf/scarf": false,
     "lmdb": false,
-    "msgpackr-extract": false
+    "msgpackr-extract": false,
+    "protobufjs": false,
+    "ssh2": false
   }
 }

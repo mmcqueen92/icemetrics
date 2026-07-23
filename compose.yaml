@@ -1,0 +1,23 @@
+name: icemetrics
+
+services:
+  postgres:
+    image: postgres:17.10-alpine3.23
+    environment:
+      POSTGRES_DB: icemetrics
+      POSTGRES_PASSWORD: icemetrics
+      POSTGRES_USER: icemetrics
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U icemetrics -d icemetrics']
+      interval: 2s
+      timeout: 2s
+      retries: 15
+      start_period: 5s
+    ports:
+      - '127.0.0.1:${POSTGRES_PORT:-5433}:5432'
+    stop_grace_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

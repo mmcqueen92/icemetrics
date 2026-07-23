@@ -13,14 +13,15 @@ A separately installed PostgreSQL server is not required.
 
 ```text
 npm ci
-docker compose up -d postgres
-npm run db:migrate
-npm run db:seed
+npm run docker:up
 npm run dev
 ```
 
 `npm run dev` runs API and Angular development servers concurrently and stops
 both when the command exits.
+
+Pass 3 adds `npm run db:migrate` and `npm run db:seed` to this bootstrap after
+the Prisma schema and initial migration exist.
 
 ## Root Command Contract
 
@@ -52,6 +53,7 @@ The root `package.json` must provide:
 | `npm run jobs:replay` | Replay a stored raw payload |
 | `npm run docker:up` | Start local dependencies |
 | `npm run docker:down` | Stop local dependencies without deleting volumes |
+| `npm run security:audit` | Report vulnerabilities and fail on critical severity |
 
 Workspace package names are `@icemetrics/api` and `@icemetrics/web`.
 
@@ -67,12 +69,14 @@ introduced.
 - OpenAPI UI: `http://localhost:3000/docs`
 - Liveness: `http://localhost:3000/health/live`
 - Readiness: `http://localhost:3000/health/ready`
-- PostgreSQL: `localhost:5432`
+- PostgreSQL: `localhost:5433` (container port `5432`)
 
 ## Safety
 
 - `db:reset` refuses to run unless `NODE_ENV=development` and the database host
   is local.
 - Docker volume removal is never part of `docker:down`.
+- Integration suites create disposable PostgreSQL 17 containers with unique
+  credentials and do not use the persistent Compose database.
 - Live-provider imports are opt-in; normal tests use fixtures.
 - Never point local scripts at staging or production URLs.

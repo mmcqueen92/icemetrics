@@ -12,7 +12,9 @@ export function configureApplication(app: NestExpressApplication): void {
     .map((origin) => origin.trim())
     .filter((origin) => origin.length > 0);
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api/v1', {
+    exclude: ['health/live', 'health/ready'],
+  });
   app.enableCors({
     credentials: false,
     methods: ['GET', 'HEAD', 'OPTIONS'],

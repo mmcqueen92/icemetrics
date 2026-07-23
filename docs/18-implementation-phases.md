@@ -41,6 +41,8 @@ Acceptance:
 
 ## Pass 2: Local Infrastructure and CI
 
+**Status:** Implemented and locally verified on 2026-07-23.
+
 Deliver Docker Compose PostgreSQL 17, test database isolation, GitHub Actions,
 health endpoints, and dependency/security automation.
 

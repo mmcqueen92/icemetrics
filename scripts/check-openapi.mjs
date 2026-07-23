@@ -10,7 +10,7 @@ const committedPath = resolve('apps/api/openapi/openapi.json');
 try {
   const result = spawnSync(
     process.execPath,
-    ['--import', 'tsx', 'apps/api/src/openapi/generate-openapi.ts'],
+    ['apps/api/dist/openapi/generate-openapi.js'],
     {
       env: {
         ...process.env,

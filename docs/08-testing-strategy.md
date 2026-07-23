@@ -53,8 +53,12 @@ Integration checks on every pull request after fast checks:
 
 ```text
 npm run test:integration
-npm run test:e2e
 ```
+
+`npm run test:e2e` joins the pull-request gate when the browser harness is
+implemented in Pass 10. Each integration test file creates its own PostgreSQL
+17 Testcontainers instance with a unique database name and credentials; suites
+never use the local Compose database or share state.
 
 `main` and release candidates run the complete suite. Tests may be parallelized
 by suite but must not share a database.

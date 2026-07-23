@@ -1,5 +1,7 @@
 # First Implementation Sprint
 
+**Status:** Complete; Passes 1 and 2 were locally verified on 2026-07-23.
+
 ## Goal
 
 Complete Passes 1 and 2 from `docs/18-implementation-phases.md`: a reproducible
