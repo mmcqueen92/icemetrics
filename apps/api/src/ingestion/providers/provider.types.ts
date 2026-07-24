@@ -1,5 +1,6 @@
 export type ProviderResourceType =
   | 'teams'
+  | 'season'
   | 'roster'
   | 'schedule'
   | 'team-season-schedule'
@@ -25,10 +26,28 @@ export interface ProviderFetch<T> {
   validate: () => T;
 }
 
+export interface ProviderEntityRejection {
+  externalKey: string | null;
+  issues: readonly string[];
+}
+
+export interface ProviderCollection<T> {
+  items: T[];
+  rejections: ProviderEntityRejection[];
+}
+
 export interface ProviderTeam {
   abbreviation: string;
   externalId: string;
   fullName: string;
+  leagueExternalId: string;
+}
+
+export interface ProviderSeason {
+  endDate: string;
+  externalId: string;
+  label: string;
+  startDate: string;
 }
 
 export interface ProviderPlayer {
@@ -129,12 +148,15 @@ export interface HockeyDataProvider {
   getRoster(
     teamAbbreviation: string,
     seasonExternalId: string,
-  ): Promise<ProviderFetch<ProviderPlayer[]>>;
+  ): Promise<ProviderFetch<ProviderCollection<ProviderPlayer>>>;
+  getSeason(seasonExternalId: string): Promise<ProviderFetch<ProviderSeason>>;
   getSchedule(date: string): Promise<ProviderFetch<ProviderGame[]>>;
-  getStandings(date: string): Promise<ProviderFetch<ProviderStanding[]>>;
+  getStandings(
+    date: string,
+  ): Promise<ProviderFetch<ProviderCollection<ProviderStanding>>>;
   getTeamSeasonSchedule(
     teamAbbreviation: string,
     seasonExternalId: string,
   ): Promise<ProviderFetch<ProviderGame[]>>;
-  getTeams(): Promise<ProviderFetch<ProviderTeam[]>>;
+  getTeams(): Promise<ProviderFetch<ProviderCollection<ProviderTeam>>>;
 }

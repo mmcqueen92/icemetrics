@@ -16,9 +16,18 @@ import { IngestionCaptureService } from '../src/ingestion/ingestion-capture.serv
 import { parseTeams } from '../src/ingestion/providers/nhl/nhl.schemas.js';
 import { ProviderValidationError } from '../src/ingestion/providers/provider.errors.js';
 import type {
+  ProviderCollection,
   ProviderFetch,
+  ProviderPlayer,
+  ProviderSeason,
+  ProviderStanding,
   ProviderTeam,
 } from '../src/ingestion/providers/provider.types.js';
+import { ImportIssueService } from '../src/ingestion/raw/import-issue.service.js';
+import { RawPayloadService } from '../src/ingestion/raw/raw-payload.service.js';
+import { PlayersImportService } from '../src/ingestion/reference/players-import.service.js';
+import { ReferenceImportRepository } from '../src/ingestion/reference/reference-import.repository.js';
+import { TeamsImportService } from '../src/ingestion/reference/teams-import.service.js';
 import { AdvisoryLockService } from '../src/jobs/advisory-lock.service.js';
 import { JobCoordinatorService } from '../src/jobs/job-coordinator.service.js';
 import { JobExecutionService } from '../src/jobs/job-execution.service.js';
@@ -45,8 +54,11 @@ describe('provider and ingestion framework', () => {
   let database: StartedPostgresTestDatabase;
   let executions: JobExecutionService;
   let module: TestingModule;
+  let playersImport: PlayersImportService;
   let pool: Pool;
   let replay: ReplayService;
+  let teamsImport: TeamsImportService;
+  const referenceProvider = new ReferenceFixtureProvider();
 
   beforeAll(async () => {
     const hostPort = await allocatePort();
@@ -75,6 +87,23 @@ describe('provider and ingestion framework', () => {
     coordinator = module.get(JobCoordinatorService);
     executions = module.get(JobExecutionService);
     replay = module.get(ReplayService);
+    const repository = module.get(ReferenceImportRepository);
+    const rawPayloads = module.get(RawPayloadService);
+    const issues = module.get(ImportIssueService);
+    teamsImport = new TeamsImportService(
+      referenceProvider,
+      capture,
+      repository,
+      rawPayloads,
+      issues,
+    );
+    playersImport = new PlayersImportService(
+      referenceProvider,
+      capture,
+      repository,
+      rawPayloads,
+      issues,
+    );
   });
 
   afterAll(async () => {
@@ -296,6 +325,189 @@ describe('provider and ingestion framework', () => {
     expect(execution.rows[0]?.status).toBe('FAILED');
     expect(execution.rows[0]?.finished_at).toBeInstanceOf(Date);
   });
+
+  it('imports stable league, season, and team identities idempotently', async () => {
+    const first = await coordinator.run(manualTeamsRequest(), (executionId) =>
+      teamsImport.execute(executionId, { date: '2026-01-15' }),
+    );
+    const second = await coordinator.run(manualTeamsRequest(), (executionId) =>
+      teamsImport.execute(executionId, { date: '2026-01-15' }),
+    );
+    const identities = await pool.query<{
+      league_identities: number;
+      season_identities: number;
+      team_identities: number;
+      teams: number;
+    }>(`
+      SELECT
+        (SELECT count(*)::int FROM core.league_provider_identity) AS league_identities,
+        (SELECT count(*)::int FROM core.season_provider_identity) AS season_identities,
+        (SELECT count(*)::int FROM core.team_provider_identity) AS team_identities,
+        (SELECT count(*)::int FROM core.team) AS teams
+    `);
+    const processed = await pool.query<{ count: number }>(`
+      SELECT count(*)::int AS count
+      FROM raw.provider_payload
+      WHERE resource_type IN ('teams', 'standings', 'season')
+        AND status = 'PROCESSED'
+    `);
+    const execution = await pool.query<{ error_summary: unknown }>(
+      'SELECT error_summary FROM ops.job_execution WHERE id = $1',
+      [first.executionId],
+    );
+
+    expect(execution.rows[0]?.error_summary).toBeNull();
+    expect(first).toMatchObject({
+      counts: { recordsCreated: 4, recordsFailed: 0 },
+      status: JobStatus.SUCCEEDED,
+    });
+    expect(second).toMatchObject({
+      counts: { recordsUnchanged: 4 },
+      status: JobStatus.SUCCEEDED,
+    });
+    expect(identities.rows[0]).toEqual({
+      league_identities: 1,
+      season_identities: 1,
+      team_identities: 2,
+      teams: 2,
+    });
+    expect(processed.rows[0]?.count).toBe(3);
+  });
+
+  it('commits valid roster siblings and reconciles partial-job issues', async () => {
+    referenceProvider.rosters.set('VAN', {
+      items: [providerPlayer('1001', 'Ada', 'Forward')],
+      rejections: [
+        { externalKey: 'bad-player', issues: ['player.position: invalid'] },
+      ],
+    });
+    referenceProvider.rosters.set('TOR', {
+      items: [providerPlayer('1002', 'Grace', 'Goalie')],
+      rejections: [],
+    });
+    const season = await pool.query<{ id: string }>(
+      'SELECT id FROM core.season LIMIT 1',
+    );
+    const result = await coordinator.run(
+      {
+        jobType: JobType.PLAYERS,
+        parameters: { seasonId: season.rows[0]!.id },
+        trigger: JobTrigger.MANUAL,
+      },
+      (executionId) =>
+        playersImport.execute(executionId, {
+          seasonId: season.rows[0]!.id,
+        }),
+    );
+    const persisted = await pool.query<{
+      error_issues: number;
+      players: number;
+      provider_identities: number;
+      recorded_failures: number;
+    }>(
+      `
+      SELECT
+        (SELECT count(*)::int FROM core.player) AS players,
+        (SELECT count(*)::int FROM core.player_provider_identity) AS provider_identities,
+        (
+          SELECT count(*)::int
+          FROM ops.import_issue
+          WHERE job_execution_id = $1 AND severity = 'ERROR'
+        ) AS error_issues,
+        (
+          SELECT records_failed
+          FROM ops.job_execution
+          WHERE id = $1
+        ) AS recorded_failures
+    `,
+      [result.executionId],
+    );
+
+    expect(result).toMatchObject({
+      counts: {
+        recordsCreated: 2,
+        recordsFailed: 1,
+        recordsFetched: 3,
+      },
+      status: JobStatus.PARTIAL,
+    });
+    expect(persisted.rows[0]).toEqual({
+      error_issues: 1,
+      players: 2,
+      provider_identities: 2,
+      recorded_failures: 1,
+    });
+  });
+
+  it('deactivates a player only after three clean consecutive absences', async () => {
+    referenceProvider.rosters.set('VAN', {
+      items: [providerPlayer('1001', 'Ada', 'Forward')],
+      rejections: [],
+    });
+    referenceProvider.rosters.set('TOR', {
+      items: [providerPlayer('1002', 'Grace', 'Goalie')],
+      rejections: [],
+    });
+    const season = await pool.query<{ id: string }>(
+      'SELECT id FROM core.season LIMIT 1',
+    );
+    const request = {
+      jobType: JobType.PLAYERS,
+      parameters: { seasonId: season.rows[0]!.id },
+      trigger: JobTrigger.MANUAL,
+    } as const;
+    await coordinator.run(request, (executionId) =>
+      playersImport.execute(executionId, request.parameters),
+    );
+
+    referenceProvider.rosters.set('TOR', { items: [], rejections: [] });
+    const firstAbsence = await coordinator.run(request, (executionId) =>
+      playersImport.execute(executionId, request.parameters),
+    );
+    const secondAbsence = await coordinator.run(request, (executionId) =>
+      playersImport.execute(executionId, request.parameters),
+    );
+    const thirdAbsence = await coordinator.run(request, (executionId) =>
+      playersImport.execute(executionId, request.parameters),
+    );
+    const player = await pool.query<{
+      active: boolean;
+      current_team_id: string | null;
+    }>(`
+      SELECT player.active, player.current_team_id
+      FROM core.player AS player
+      JOIN core.player_provider_identity AS identity
+        ON identity.player_id = player.id
+      WHERE identity.provider = 'nhl' AND identity.external_id = '1002'
+    `);
+    const absenceIssues = await pool.query<{
+      absence_count: number;
+    }>(
+      `
+      SELECT (details->>'consecutiveSuccessfulSnapshots')::int AS absence_count
+      FROM ops.import_issue
+      WHERE job_execution_id IN ($1, $2)
+        AND code = 'REFERENCE_ENTITY_ABSENT'
+      ORDER BY absence_count
+    `,
+      [firstAbsence.executionId, secondAbsence.executionId],
+    );
+
+    expect(firstAbsence.status).toBe(JobStatus.SUCCEEDED);
+    expect(secondAbsence.status).toBe(JobStatus.SUCCEEDED);
+    expect(thirdAbsence).toMatchObject({
+      counts: { recordsUpdated: 1 },
+      status: JobStatus.SUCCEEDED,
+    });
+    expect(absenceIssues.rows).toEqual([
+      { absence_count: 1 },
+      { absence_count: 2 },
+    ]);
+    expect(player.rows[0]).toEqual({
+      active: false,
+      current_team_id: null,
+    });
+  });
 });
 
 function manualTeamsRequest() {
@@ -308,8 +520,8 @@ function manualTeamsRequest() {
 
 function teamFetch(
   body: Uint8Array,
-  validate: () => ProviderTeam[],
-): ProviderFetch<ProviderTeam[]> {
+  validate: () => ProviderCollection<ProviderTeam>,
+): ProviderFetch<ProviderCollection<ProviderTeam>> {
   return {
     body,
     contentType: 'application/json',
@@ -352,4 +564,132 @@ function runNode(arguments_: string[], databaseUrl: string): Promise<void> {
       }
     });
   });
+}
+
+class ReferenceFixtureProvider {
+  readonly rosters = new Map<string, ProviderCollection<ProviderPlayer>>();
+
+  getTeams(): Promise<ProviderFetch<ProviderCollection<ProviderTeam>>> {
+    return Promise.resolve(
+      fixtureFetch('teams', 'nhl', {
+        items: [
+          {
+            abbreviation: 'VAN',
+            externalId: '23',
+            fullName: 'Vancouver Canucks',
+            leagueExternalId: '133',
+          },
+          {
+            abbreviation: 'TOR',
+            externalId: '10',
+            fullName: 'Toronto Maple Leafs',
+            leagueExternalId: '133',
+          },
+        ],
+        rejections: [],
+      }),
+    );
+  }
+
+  getStandings(
+    date: string,
+  ): Promise<ProviderFetch<ProviderCollection<ProviderStanding>>> {
+    return Promise.resolve(
+      fixtureFetch('standings', date, {
+        items: [
+          providerStanding('VAN', 'Vancouver', 'Canucks'),
+          providerStanding('TOR', 'Toronto', 'Maple Leafs'),
+        ],
+        rejections: [],
+      }),
+    );
+  }
+
+  getSeason(externalId: string): Promise<ProviderFetch<ProviderSeason>> {
+    return Promise.resolve(
+      fixtureFetch('season', externalId, {
+        endDate: '2026-06-15',
+        externalId,
+        label: '2025-2026',
+        startDate: '2025-10-07',
+      }),
+    );
+  }
+
+  getRoster(
+    abbreviation: string,
+    seasonExternalId: string,
+  ): Promise<ProviderFetch<ProviderCollection<ProviderPlayer>>> {
+    return Promise.resolve(
+      fixtureFetch(
+        'roster',
+        `${abbreviation}:${seasonExternalId}`,
+        this.rosters.get(abbreviation) ?? { items: [], rejections: [] },
+      ),
+    );
+  }
+}
+
+function fixtureFetch<T>(
+  resourceType: 'roster' | 'season' | 'standings' | 'teams',
+  externalKey: string,
+  value: T,
+): ProviderFetch<T> {
+  return {
+    body: new TextEncoder().encode(JSON.stringify(value)),
+    contentType: 'application/json',
+    descriptor: {
+      externalKey,
+      parameters: {},
+      path: `/${resourceType}`,
+      resourceType,
+    },
+    fetchedAt: new Date('2026-01-15T12:00:00Z'),
+    httpStatus: 200,
+    provider: 'nhl',
+    validate: () => value,
+  };
+}
+
+function providerStanding(
+  abbreviation: string,
+  city: string,
+  name: string,
+): ProviderStanding {
+  return {
+    asOfDate: '2026-01-15',
+    city,
+    conferenceRank: 1,
+    divisionRank: 1,
+    gamesPlayed: 40,
+    goalsAgainst: 100,
+    goalsFor: 120,
+    leagueRank: 1,
+    losses: 10,
+    overtimeLosses: 5,
+    pointPercentage: 0.625,
+    points: 50,
+    seasonExternalId: '20252026',
+    sourceCutoff: '2026-01-15T12:00:00.000Z',
+    teamAbbreviation: abbreviation,
+    teamName: name,
+    wins: 25,
+  };
+}
+
+function providerPlayer(
+  externalId: string,
+  firstName: string,
+  lastName: string,
+): ProviderPlayer {
+  return {
+    active: true,
+    birthDate: null,
+    currentTeamExternalId: null,
+    externalId,
+    firstName,
+    lastName,
+    position: null,
+    shootsCatches: null,
+  };
 }

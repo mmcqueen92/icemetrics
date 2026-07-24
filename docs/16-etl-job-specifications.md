@@ -19,7 +19,11 @@ manual and scheduled executions cannot overlap.
 
 - Frequency: daily after 09:00 UTC.
 - Fetches the team directory and current standings metadata.
-- Upserts league, active teams, and provider identities.
+- Fetches authoritative season dates for the single season identified by the
+  standings snapshot.
+- Joins current standings teams to the directory by uppercase abbreviation and
+  upserts the league, season, active teams, and provider identities in one
+  transaction.
 - Marks a team inactive only after it is absent from three consecutive
   successful daily snapshots; absence never deletes history.
 
@@ -30,6 +34,31 @@ manual and scheduled executions cannot overlap.
 - Upserts players, current teams, positions, and provider identities.
 - A player is marked inactive only after successful processing of every active
   roster and absence from three consecutive daily runs.
+- Each team roster is transformed in its own transaction so an invalid entity
+  or failed roster cannot roll back a previously completed team.
+
+### Reference Snapshot Semantics
+
+Teams and Players store the sorted external IDs observed by a successful,
+non-dry-run snapshot in `ops.job_execution.cursor.externalIds`. The two most
+recent qualifying cursors provide absence history: the first and second
+consecutive absence create warning issues, and the third deactivates the
+record. Partial, failed, skipped, and dry-run executions never advance this
+history. Inactivation is also suppressed when any required roster or reference
+entity failed, preventing an incomplete provider response from creating false
+inactive records.
+
+Reference-job counts describe normalized entities, not HTTP requests:
+
+- `records_fetched` counts provider collection members, including rejected
+  members, plus the season record;
+- created, updated, and unchanged count persisted league, season, team, or
+  player mutations; inactivation counts as an update; and
+- `records_failed` counts each rejected or unjoinable entity.
+
+Top-level payload validation failures fail the execution. Partitionable entity
+failures produce `PARTIAL` when valid siblings were persisted. Raw payloads are
+marked `PROCESSED` only after their corresponding core transaction succeeds.
 
 ### Schedule
 
@@ -84,7 +113,8 @@ Manual commands accept explicit, validated options:
 - `--dry-run`
 
 `--dry-run` may fetch and validate but must not write core or analytics data. It
-still records a job execution and raw payload unless `--fixture` is used.
+still records a job execution and raw payload unless `--fixture` is used, and
+does not contribute to absence history.
 
 ## Completion Requirements
 

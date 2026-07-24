@@ -6,15 +6,16 @@ Use the NHL-owned web API at `api-web.nhle.com` together with the NHL-owned
 stats API at `api.nhle.com` as one logical provider named `nhl`.
 
 This decision was verified again on 2026-07-24 against live JSON field
-inventories for the team directory, standings, box-score, landing, and
-right-rail endpoint families. The provider adapter contract and approved paths are recorded in
-`docs/25-data-provider-design.md`.
+inventories for the team directory, season metadata, standings, box-score,
+landing, and right-rail endpoint families. The provider adapter contract and
+approved paths are recorded in `docs/25-data-provider-design.md`.
 
 ## Capability Assessment
 
 | Requirement | Source | Assessment |
 | --- | --- | --- |
 | Teams and stable external IDs | Stats `/team` | Meets |
+| Season identity and dates | Stats `/season` with an ID filter | Meets |
 | Current rosters and player IDs | Web `/roster/...` | Meets |
 | Player profile details | Web `/player/.../landing` | Meets |
 | Upcoming and historical schedules | Web schedule endpoints | Meets |

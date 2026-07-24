@@ -1,0 +1,16 @@
+{
+  "_fixture": {
+    "endpoint": "/season?cayenneExp=id=20252026",
+    "retrievedAt": "2026-07-24T07:00:00.000Z",
+    "sanitized": true
+  },
+  "data": [
+    {
+      "id": 20252026,
+      "startDate": "2025-10-07T17:00:00",
+      "regularSeasonEndDate": "2026-04-17T00:00:00",
+      "endDate": "2026-06-15T00:00:00"
+    }
+  ],
+  "total": 1
+}

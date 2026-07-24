@@ -1,12 +1,12 @@
 # IceMetrics
 
 IceMetrics is a production-style NHL analytics platform built as a TypeScript
-monorepo. The repository currently contains the Pass 6 foundation: a NestJS
+monorepo. The repository currently contains the Pass 7 foundation: a NestJS
 modular-monolith API/job runner, an Angular standalone web application,
 containerized PostgreSQL, a migration-backed Prisma data model, a
 production-style HTTP platform, public hockey read endpoints, generated API
-artifacts, a fixture-backed NHL provider and ingestion/job framework, isolated
-integration tests, and CI.
+artifacts, fixture-backed NHL reference imports and ingestion/job framework,
+isolated integration tests, and CI.
 
 The project documentation in [`docs/`](docs/) is the source of truth. Read
 [`AGENTS.md`](AGENTS.md) before making implementation or architecture changes.
@@ -106,7 +106,7 @@ scripts/  Repository-level automation
 
 ## Current Scope
 
-Pass 6 includes the complete core read API for leagues, seasons, teams, rosters,
+Pass 7 includes the complete core read API for leagues, seasons, teams, rosters,
 players and search, games, player and team game statistics, and official
 standings snapshots. Every collection supports documented filtering, sorting,
 bounded pagination, stable ordering, validation, caching, and generated Angular
@@ -120,6 +120,11 @@ timeouts/retries/concurrency, raw deduplication, import issues, structured job
 records, PostgreSQL advisory locks, abandoned-run reconciliation, validated
 manual commands, hourly dispatch policy, and network-free replay.
 
-It deliberately leaves core reference/game transformations to Passes 7 and 8
-and excludes analytics calculations and endpoints, product UI, authentication,
-browser end-to-end tests, and deployment infrastructure.
+Reference jobs now import stable league, season, team, and player identities;
+preserve valid siblings from partitionable invalid collections; remain
+idempotent on repeat runs; and delay inactivation until three complete,
+successful snapshots agree that a record is absent.
+
+It deliberately leaves game, statistics, and standings transformations to Pass
+8 and excludes analytics calculations and endpoints, product UI,
+authentication, browser end-to-end tests, and deployment infrastructure.

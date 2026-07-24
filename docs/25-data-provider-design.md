@@ -7,6 +7,7 @@ interface. The initial interface exposes:
 
 ```text
 getTeams()
+getSeason(seasonExternalId)
 getRoster(teamAbbreviation, seasonExternalId)
 getSchedule(date)
 getTeamSeasonSchedule(teamAbbreviation, seasonExternalId)
@@ -27,6 +28,11 @@ Each operation returns:
 The adapter does not write to Prisma. Ingestion orchestration stores the raw
 response and then passes the validated DTO to a transformer.
 
+Collection operations return valid `items` and per-entity `rejections`.
+Container-level shape failures reject the payload. A malformed collection
+member records its external key when available and its validation issues while
+valid siblings remain available for a bounded transform.
+
 ## Internal Provider DTOs
 
 All upstream identifiers are normalized to non-empty strings at the adapter
@@ -34,7 +40,10 @@ boundary. These DTOs contain no Prisma or NestJS types:
 
 ```text
 ProviderTeam
-  externalId, fullName, abbreviation
+  externalId, leagueExternalId, fullName, abbreviation
+
+ProviderSeason
+  externalId, label, startDate, endDate
 
 ProviderPlayer
   externalId, firstName, lastName, position|null, shootsCatches|null,
@@ -124,6 +133,7 @@ Approved endpoint families:
 | Capability | Endpoint |
 | --- | --- |
 | Team directory and stable IDs | Stats API `/team` |
+| Season dates and stable ID | Stats API `/season?cayenneExp=id={seasonCode}` |
 | Current or dated standings | Web API `/standings/{date-or-now}` |
 | Roster | Web API `/roster/{teamAbbreviation}/{seasonCode}` |
 | Daily schedule | Web API `/schedule/{date}` |
@@ -135,6 +145,10 @@ Approved endpoint families:
 Endpoint paths are configuration inside the NHL adapter, not scattered
 constants. The adapter may combine web and stats responses, but downstream code
 sees one provider.
+
+The raw request descriptor stores `/season` as the allowlisted path and the
+filter as a separate allowlisted request parameter; query strings are never
+embedded in the recorded path.
 
 ## Reliability Policy
 

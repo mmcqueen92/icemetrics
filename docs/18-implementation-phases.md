@@ -116,6 +116,8 @@ Acceptance:
 
 ## Pass 7: Reference Imports
 
+**Status:** Implemented and locally verified on 2026-07-24.
+
 Implement league/season/team and player/roster imports.
 
 Acceptance:

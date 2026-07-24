@@ -233,6 +233,12 @@ owning core entity is removed; core historical entities are normally retained.
 `records_created`, `records_updated`, `records_unchanged`, `records_failed`,
 `error_summary` jsonb nullable.
 
+For Teams and Players, a successful non-dry-run execution stores the sorted
+provider IDs observed in `cursor.externalIds`. Reference imports read the two
+most recent qualifying cursors to implement three-snapshot inactivation
+without mutable absence counters. Cursor contents are job-owned resumability
+metadata, not a core entity source of truth.
+
 - `correlation_id` is indexed.
 - `(job_type, status, requested_at desc)` is indexed.
 - Counters are non-negative.

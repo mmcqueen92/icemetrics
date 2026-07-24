@@ -35,6 +35,7 @@ describe('NhlDataProvider fixture contracts', () => {
     requestedPaths = [];
     const fixtureByPath: Record<string, string> = {
       '/team': 'teams.json',
+      '/season': 'season.json',
       '/v1/club-schedule-season/VAN/20252026': 'team-season-schedule.json',
       '/v1/gamecenter/2025020700/boxscore': 'game-boxscore.json',
       '/v1/gamecenter/2025020700/right-rail': 'game-team-stats.json',
@@ -69,6 +70,7 @@ describe('NhlDataProvider fixture contracts', () => {
 
   it('validates and maps every approved endpoint family', async () => {
     const teams = (await provider.getTeams()).validate();
+    const season = (await provider.getSeason('20252026')).validate();
     const roster = (await provider.getRoster('van', '20252026')).validate();
     const schedule = (await provider.getSchedule('2026-01-15')).validate();
     const seasonSchedule = (
@@ -81,12 +83,22 @@ describe('NhlDataProvider fixture contracts', () => {
     const player = (await provider.getPlayer('1001')).validate();
     const standings = (await provider.getStandings('2026-01-15')).validate();
 
-    expect(teams[0]).toMatchObject({
+    expect(teams.items[0]).toMatchObject({
       abbreviation: 'TOR',
       externalId: '10',
       fullName: 'Toronto Maple Leafs',
     });
-    expect(roster.map((entry) => entry.position)).toEqual(['C', 'D', 'G']);
+    expect(roster.items.map((entry) => entry.position)).toEqual([
+      'C',
+      'D',
+      'G',
+    ]);
+    expect(season).toEqual({
+      endDate: '2026-06-15',
+      externalId: '20252026',
+      label: '2025-2026',
+      startDate: '2025-10-07',
+    });
     expect(schedule.map((game) => game.status)).toEqual(['LIVE', 'POSTPONED']);
     expect(seasonSchedule).toEqual([]);
     expect(boxscore.game).toMatchObject({
@@ -105,11 +117,11 @@ describe('NhlDataProvider fixture contracts', () => {
       teamExternalId: '23',
     });
     expect(player.currentTeamExternalId).toBe('23');
-    expect(standings[0]).toMatchObject({
+    expect(standings.items[0]).toMatchObject({
       pointPercentage: 0.611111,
       teamAbbreviation: 'VAN',
     });
-    expect(requestedPaths).toHaveLength(8);
+    expect(requestedPaths).toHaveLength(9);
   });
 
   it('preserves raw bytes until validation is explicitly requested', async () => {
@@ -122,12 +134,13 @@ describe('NhlDataProvider fixture contracts', () => {
       path: '/team',
       resourceType: 'teams',
     });
-    expect(response.validate()).toHaveLength(2);
+    expect(response.validate().items).toHaveLength(2);
   });
 
   it('routes stored payloads through current validators for replay', async () => {
     const cases = [
       ['teams', 'teams.json', {}],
+      ['season', 'season.json', {}],
       ['roster', 'roster.json', { team: 'VAN' }],
       ['schedule', 'schedule.json', {}],
       ['team-season-schedule', 'team-season-schedule.json', {}],
@@ -170,9 +183,33 @@ describe('NhlDataProvider fixture contracts', () => {
       }),
     );
 
-    await expect(async () =>
-      (await malformed.getRoster('VAN', '20252026')).validate(),
-    ).rejects.toBeInstanceOf(ProviderValidationError);
+    const result = (await malformed.getRoster('VAN', '20252026')).validate();
+    expect(result.items).toEqual([]);
+    expect(result.rejections).toEqual([
+      expect.objectContaining({
+        externalKey: null,
+        issues: [expect.stringContaining('player.id')],
+      }),
+    ]);
+  });
+
+  it('partitions an invalid entity without discarding valid siblings', async () => {
+    const fixture = JSON.parse(
+      await readFile(`${FIXTURE_DIRECTORY}teams.json`, 'utf8'),
+    ) as { data: unknown[] };
+    fixture.data.push({ id: 99, fullName: 'Incomplete Team' });
+
+    const result = provider.validateStoredPayload(
+      'teams',
+      fixture,
+      {},
+      new Date('2026-07-22T12:00:00Z'),
+    );
+
+    expect(result).toMatchObject({
+      items: [{ externalId: '10' }, { externalId: '23' }],
+      rejections: [{ externalKey: '99' }],
+    });
   });
 
   it('rejects incomplete official team game statistics', () => {

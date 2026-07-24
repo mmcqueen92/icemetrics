@@ -20,6 +20,7 @@ const JOB_BY_RESOURCE: Readonly<Record<ProviderResourceType, JobType>> = {
   player: JobType.PLAYERS,
   roster: JobType.PLAYERS,
   schedule: JobType.SCHEDULE,
+  season: JobType.TEAMS,
   standings: JobType.STANDINGS,
   'team-season-schedule': JobType.SCHEDULE,
   teams: JobType.TEAMS,

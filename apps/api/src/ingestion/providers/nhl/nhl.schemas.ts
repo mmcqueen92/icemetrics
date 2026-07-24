@@ -6,11 +6,14 @@ import type {
   ProviderGameBoxscore,
   ProviderGameStatus,
   ProviderGameType,
+  ProviderCollection,
+  ProviderEntityRejection,
   ProviderPlayer,
   ProviderPlayerGameStat,
   ProviderStanding,
   ProviderTeam,
   ProviderTeamGameSummary,
+  ProviderSeason,
 } from '../provider.types.js';
 
 const nonNegativeInteger = z.number().int().nonnegative();
@@ -25,10 +28,11 @@ const instant = z.iso.datetime({ offset: true });
 const upstreamTeam = z.object({
   fullName: z.string().trim().min(1),
   id: positiveIdentifier,
+  leagueId: positiveIdentifier,
   triCode: z.string().trim().min(2).max(4),
 });
 
-const teamsResponse = z.object({ data: z.array(upstreamTeam) });
+const teamsResponse = z.object({ data: z.array(z.unknown()) });
 
 const upstreamPlayer = z.object({
   active: z.boolean().optional(),
@@ -43,10 +47,18 @@ const upstreamPlayer = z.object({
 });
 
 const rosterResponse = z.object({
-  defensemen: z.array(upstreamPlayer),
-  forwards: z.array(upstreamPlayer),
-  goalies: z.array(upstreamPlayer),
+  defensemen: z.array(z.unknown()),
+  forwards: z.array(z.unknown()),
+  goalies: z.array(z.unknown()),
 });
+
+const upstreamSeason = z.object({
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}T/),
+  id: positiveIdentifier,
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}T/),
+});
+
+const seasonResponse = z.object({ data: z.array(upstreamSeason).length(1) });
 
 const upstreamTeamReference = z.object({
   id: positiveIdentifier,
@@ -147,27 +159,40 @@ const upstreamStanding = z.object({
   wins: nonNegativeInteger,
 });
 
-const standingsResponse = z.object({ standings: z.array(upstreamStanding) });
+const standingsResponse = z.object({ standings: z.array(z.unknown()) });
 
-export function parseTeams(value: unknown): ProviderTeam[] {
+export function parseTeams(value: unknown): ProviderCollection<ProviderTeam> {
   const parsed = parse('teams', teamsResponse, value);
-  return parsed.data.map((team) => {
-    return {
-      abbreviation: team.triCode.toUpperCase(),
-      externalId: String(team.id),
-      fullName: team.fullName,
-    };
-  });
+  return partition('team', parsed.data, upstreamTeam, (team) => ({
+    abbreviation: team.triCode.toUpperCase(),
+    externalId: String(team.id),
+    fullName: team.fullName,
+    leagueExternalId: String(team.leagueId),
+  }));
 }
 
 export function parseRoster(
   value: unknown,
   teamExternalId: string,
-): ProviderPlayer[] {
+): ProviderCollection<ProviderPlayer> {
   const parsed = parse('roster', rosterResponse, value);
-  return [...parsed.forwards, ...parsed.defensemen, ...parsed.goalies].map(
+  return partition(
+    'player',
+    [...parsed.forwards, ...parsed.defensemen, ...parsed.goalies],
+    upstreamPlayer,
     (player) => mapPlayer(player, teamExternalId),
   );
+}
+
+export function parseSeason(value: unknown): ProviderSeason {
+  const season = parse('season', seasonResponse, value).data[0]!;
+  const externalId = String(season.id);
+  return {
+    endDate: season.endDate.slice(0, 10),
+    externalId,
+    label: `${externalId.slice(0, 4)}-${externalId.slice(4, 8)}`,
+    startDate: season.startDate.slice(0, 10),
+  };
 }
 
 export function parseDailySchedule(value: unknown): ProviderGame[] {
@@ -244,27 +269,68 @@ export function parsePlayer(value: unknown): ProviderPlayer {
 export function parseStandings(
   value: unknown,
   fetchedAt: Date,
-): ProviderStanding[] {
+): ProviderCollection<ProviderStanding> {
   const parsed = parse('standings', standingsResponse, value);
-  return parsed.standings.map((standing) => ({
-    asOfDate: standing.date,
-    city: standing.placeName.default,
-    conferenceRank: standing.conferenceSequence ?? null,
-    divisionRank: standing.divisionSequence ?? null,
-    gamesPlayed: standing.gamesPlayed,
-    goalsAgainst: standing.goalAgainst,
-    goalsFor: standing.goalFor,
-    leagueRank: standing.leagueSequence,
-    losses: standing.losses,
-    overtimeLosses: standing.otLosses,
-    pointPercentage: standing.pointPctg,
-    points: standing.points,
-    seasonExternalId: String(standing.seasonId),
-    sourceCutoff: fetchedAt.toISOString(),
-    teamAbbreviation: standing.teamAbbrev.default.toUpperCase(),
-    teamName: standing.teamCommonName.default,
-    wins: standing.wins,
-  }));
+  return partition(
+    'standing',
+    parsed.standings,
+    upstreamStanding,
+    (standing) => ({
+      asOfDate: standing.date,
+      city: standing.placeName.default,
+      conferenceRank: standing.conferenceSequence ?? null,
+      divisionRank: standing.divisionSequence ?? null,
+      gamesPlayed: standing.gamesPlayed,
+      goalsAgainst: standing.goalAgainst,
+      goalsFor: standing.goalFor,
+      leagueRank: standing.leagueSequence,
+      losses: standing.losses,
+      overtimeLosses: standing.otLosses,
+      pointPercentage: standing.pointPctg,
+      points: standing.points,
+      seasonExternalId: String(standing.seasonId),
+      sourceCutoff: fetchedAt.toISOString(),
+      teamAbbreviation: standing.teamAbbrev.default.toUpperCase(),
+      teamName: standing.teamCommonName.default,
+      wins: standing.wins,
+    }),
+  );
+}
+
+function partition<Input, Output>(
+  entityType: string,
+  values: readonly unknown[],
+  schema: z.ZodType<Input>,
+  map: (value: Input) => Output,
+): ProviderCollection<Output> {
+  const items: Output[] = [];
+  const rejections: ProviderEntityRejection[] = [];
+  for (const value of values) {
+    const result = schema.safeParse(value);
+    if (result.success) {
+      items.push(map(result.data));
+      continue;
+    }
+    rejections.push({
+      externalKey: externalKey(value),
+      issues: result.error.issues.map(
+        (issue) => `${entityType}.${issue.path.join('.')}: ${issue.message}`,
+      ),
+    });
+  }
+  return { items, rejections };
+}
+
+function externalKey(value: unknown): string | null {
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    (typeof value.id === 'string' || typeof value.id === 'number')
+  ) {
+    return String(value.id);
+  }
+  return null;
 }
 
 function parse<T>(

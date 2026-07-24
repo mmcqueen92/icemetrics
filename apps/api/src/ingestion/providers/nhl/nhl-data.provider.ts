@@ -9,6 +9,7 @@ import {
 import { ProviderHttpClient } from '../provider-http.client.js';
 import type {
   HockeyDataProvider,
+  ProviderCollection,
   ProviderFetch,
   ProviderGame,
   ProviderGameBoxscore,
@@ -17,6 +18,7 @@ import type {
   ProviderStanding,
   ProviderTeam,
   ProviderResourceType,
+  ProviderSeason,
   ProviderTeamGameSummary,
 } from '../provider.types.js';
 import {
@@ -25,6 +27,7 @@ import {
   parseGameTeamStats,
   parsePlayer,
   parseRoster,
+  parseSeason,
   parseSeasonSchedule,
   parseStandings,
   parseTeams,
@@ -40,6 +43,7 @@ const PATHS = {
   schedule: (date: string) => `/schedule/${segment(date)}`,
   seasonSchedule: (team: string, season: string) =>
     `/club-schedule-season/${segment(team)}/${segment(season)}`,
+  season: '/season',
   standings: (date: string) => `/standings/${segment(date)}`,
   teams: '/team',
 } as const;
@@ -62,7 +66,7 @@ export class NhlDataProvider implements HockeyDataProvider {
     );
   }
 
-  getTeams(): Promise<ProviderFetch<ProviderTeam[]>> {
+  getTeams(): Promise<ProviderFetch<ProviderCollection<ProviderTeam>>> {
     return this.fetch(
       this.statsBaseUrl,
       {
@@ -78,7 +82,7 @@ export class NhlDataProvider implements HockeyDataProvider {
   getRoster(
     teamAbbreviation: string,
     seasonExternalId: string,
-  ): Promise<ProviderFetch<ProviderPlayer[]>> {
+  ): Promise<ProviderFetch<ProviderCollection<ProviderPlayer>>> {
     const team = normalizeTeam(teamAbbreviation);
     const season = normalizeIdentifier(seasonExternalId);
     return this.fetch(
@@ -90,6 +94,22 @@ export class NhlDataProvider implements HockeyDataProvider {
         resourceType: 'roster',
       },
       (value) => parseRoster(value, team),
+    );
+  }
+
+  getSeason(seasonExternalId: string): Promise<ProviderFetch<ProviderSeason>> {
+    const season = normalizeIdentifier(seasonExternalId);
+    const filter = `id=${season}`;
+    return this.fetch(
+      this.statsBaseUrl,
+      {
+        externalKey: season,
+        parameters: { cayenneExp: filter },
+        path: PATHS.season,
+        resourceType: 'season',
+      },
+      parseSeason,
+      { cayenneExp: filter },
     );
   }
 
@@ -174,7 +194,9 @@ export class NhlDataProvider implements HockeyDataProvider {
     );
   }
 
-  getStandings(date: string): Promise<ProviderFetch<ProviderStanding[]>> {
+  getStandings(
+    date: string,
+  ): Promise<ProviderFetch<ProviderCollection<ProviderStanding>>> {
     return this.fetch(
       this.webBaseUrl,
       {
@@ -196,6 +218,8 @@ export class NhlDataProvider implements HockeyDataProvider {
     switch (resourceType) {
       case 'teams':
         return parseTeams(value);
+      case 'season':
+        return parseSeason(value);
       case 'roster':
         return parseRoster(value, parameters['team'] ?? '');
       case 'schedule':
@@ -221,10 +245,15 @@ export class NhlDataProvider implements HockeyDataProvider {
     baseUrl: URL,
     descriptor: ProviderRequestDescriptor,
     validate: (value: unknown, fetchedAt: Date) => T,
+    query: Readonly<Record<string, string>> = {},
   ): Promise<ProviderFetch<T>> {
+    const url = new URL(descriptor.path.replace(/^\//, ''), baseUrl);
+    for (const [key, value] of Object.entries(query)) {
+      url.searchParams.set(key, value);
+    }
     const response = await this.http.get({
       endpointFamily: descriptor.resourceType,
-      url: new URL(descriptor.path.replace(/^\//, ''), baseUrl),
+      url,
     });
     return {
       ...response,
