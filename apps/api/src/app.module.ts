@@ -11,6 +11,12 @@ import { ResponseEnvelopeInterceptor } from './common/http/response-envelope.int
 import { LoggingModule } from './common/logging/logging.module.js';
 import { ApiThrottlerGuard } from './common/rate-limit/api-throttler.guard.js';
 import { DatabaseModule } from './database/database.module.js';
+import { GamesModule } from './games/games.module.js';
+import { LeaguesModule } from './leagues/leagues.module.js';
+import { PlayersModule } from './players/players.module.js';
+import { SeasonsModule } from './seasons/seasons.module.js';
+import { StandingsModule } from './standings/standings.module.js';
+import { TeamsModule } from './teams/teams.module.js';
 
 @Module({
   imports: [
@@ -33,6 +39,12 @@ import { DatabaseModule } from './database/database.module.js';
     }),
     DatabaseModule,
     HealthModule,
+    LeaguesModule,
+    SeasonsModule,
+    TeamsModule,
+    PlayersModule,
+    GamesModule,
+    StandingsModule,
   ],
   providers: [
     {

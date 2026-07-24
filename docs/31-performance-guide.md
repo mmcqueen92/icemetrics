@@ -28,6 +28,12 @@ connection and statement timeouts. Readiness uses that same pool with an
 additional two-second outward deadline so dependency stalls cannot hold the
 health endpoint open indefinitely.
 
+The Pass 5 forward migration adds deterministic read-path indexes for core list,
+search, roster, schedule, box-score, and standings queries. Integration tests
+verify the important index inventory and run representative game, roster, and
+standings `EXPLAIN (ANALYZE, BUFFERS)` queries against the seeded PostgreSQL
+database, enforcing the 500 ms normal-read budget.
+
 ## API
 
 - Use ETag and cache headers from `docs/04-api-specification.md`.

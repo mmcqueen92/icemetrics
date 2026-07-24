@@ -1,11 +1,11 @@
 # IceMetrics
 
 IceMetrics is a production-style NHL analytics platform built as a TypeScript
-monorepo. The repository currently contains the Pass 4 foundation: a NestJS
+monorepo. The repository currently contains the Pass 5 foundation: a NestJS
 modular-monolith API/job runner, an Angular standalone web application,
 containerized PostgreSQL, a migration-backed Prisma data model, a
-production-style HTTP platform, generated API artifacts, isolated integration
-tests, and CI.
+production-style HTTP platform, public hockey read endpoints, generated API
+artifacts, isolated integration tests, and CI.
 
 The project documentation in [`docs/`](docs/) is the source of truth. Read
 [`AGENTS.md`](AGENTS.md) before making implementation or architecture changes.
@@ -42,8 +42,8 @@ Local development URLs:
 - Liveness: `http://localhost:3000/health/live`
 - Readiness: `http://localhost:3000/health/ready`
 
-The API intentionally has no product endpoints yet. Hockey resources begin in
-Pass 5.
+The API exposes public, read-only leagues, seasons, teams, rosters, players,
+games, game statistics, and standings endpoints under `/api/v1`.
 
 ## Verification
 
@@ -102,12 +102,14 @@ scripts/  Repository-level automation
 
 ## Current Scope
 
-Pass 4 includes the validated environment contract, Prisma client lifecycle,
-database-backed readiness, structured JSON logging and request correlation,
-strict validation, consistent success and error envelopes, pagination,
-rate-limiting, cache and ETag behavior, security headers, OpenAPI 3.1 generation,
-an immutable-generator Angular client, and platform integration tests.
+Pass 5 includes the complete core read API for leagues, seasons, teams, rosters,
+players and search, games, player and team game statistics, and official
+standings snapshots. Every collection supports documented filtering, sorting,
+bounded pagination, stable ordering, validation, caching, and generated Angular
+client types. PostgreSQL integration tests cover seeded results, empty and
+not-found behavior, derived values, read-path indexes, and representative query
+performance.
 
-It deliberately excludes hockey product endpoints, authentication, ingestion
-behavior, analytics calculations, browser end-to-end tests, and deployment
-infrastructure. Core read endpoints begin in Pass 5.
+It deliberately excludes provider ingestion behavior, analytics calculations
+and endpoints, product UI, authentication, browser end-to-end tests, and
+deployment infrastructure.

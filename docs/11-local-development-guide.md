@@ -64,8 +64,8 @@ Workspace package names are `@icemetrics/api` and `@icemetrics/web`.
 The OpenAPI commands generate and verify both the API document and the Angular
 client. Client generation runs OpenAPI Generator 7.22.0 from the immutable
 container image pinned in `scripts/generate-openapi-client.mjs`, so Docker must
-be running. Pass 5 extends the contract and regenerated client with the first
-hockey read endpoints.
+be running. The generated client includes the Pass 5 leagues, seasons, teams,
+rosters, players, games, game-statistics, and standings operations.
 
 ## Local URLs
 

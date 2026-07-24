@@ -141,6 +141,7 @@ model League {
   teams              Team[]
   providerIdentities LeagueProviderIdentity[]
 
+  @@index([name, id], map: "ix_league_name_id")
   @@map("league")
   @@schema("core")
 }
@@ -163,6 +164,10 @@ model Season {
   teamRankings       TeamRankingSnapshot[]
 
   @@unique([leagueId, label], map: "uq_season_league_id_label")
+  @@index([startDate(sort: Desc), id], map: "ix_season_start_date_id")
+  @@index([label, id], map: "ix_season_label_id")
+  @@index([leagueId, startDate(sort: Desc), id], map: "ix_season_league_start_date_id")
+  @@index([startDate, endDate], map: "ix_season_active_dates")
   @@map("season")
   @@schema("core")
 }
@@ -190,6 +195,9 @@ model Team {
 
   @@unique([leagueId, abbreviation], map: "uq_team_league_id_abbreviation")
   @@index([leagueId, active], map: "ix_team_league_id_active")
+  @@index([name, id], map: "ix_team_name_id")
+  @@index([city, id], map: "ix_team_city_id")
+  @@index([leagueId, active, name, id], map: "ix_team_league_active_name_id")
   @@map("team")
   @@schema("core")
 }
@@ -212,6 +220,11 @@ model Player {
   metricSnapshots    PlayerMetricSnapshot[]
 
   @@index([currentTeamId, active], map: "ix_player_current_team_id_active")
+  @@index([lastName, id], map: "ix_player_last_name_id")
+  @@index([firstName, id], map: "ix_player_first_name_id")
+  @@index([position, id], map: "ix_player_position_id")
+  @@index([active, lastName, id], map: "ix_player_active_last_name_id")
+  @@index([currentTeamId, active, lastName, id], map: "ix_player_team_active_last_name_id")
   @@map("player")
   @@schema("core")
 }
@@ -241,10 +254,11 @@ model Game {
   teamMetricCutoffs   TeamMetricSnapshot[]
 
   @@unique([seasonId, homeTeamId, awayTeamId, startsAt], map: "uq_game_season_teams_starts_at")
-  @@index([seasonId, startsAt(sort: Desc)], map: "ix_game_season_id_starts_at")
-  @@index([homeTeamId, startsAt(sort: Desc)], map: "ix_game_home_team_id_starts_at")
-  @@index([awayTeamId, startsAt(sort: Desc)], map: "ix_game_away_team_id_starts_at")
-  @@index([status, startsAt], map: "ix_game_status_starts_at")
+  @@index([seasonId, startsAt(sort: Desc), id], map: "ix_game_season_id_starts_at")
+  @@index([homeTeamId, startsAt(sort: Desc), id], map: "ix_game_home_team_id_starts_at")
+  @@index([awayTeamId, startsAt(sort: Desc), id], map: "ix_game_away_team_id_starts_at")
+  @@index([status, startsAt, id], map: "ix_game_status_starts_at")
+  @@index([seasonId, gameType, startsAt(sort: Desc), id], map: "ix_game_season_type_starts_at_id")
   @@map("game")
   @@schema("core")
 }
@@ -398,6 +412,9 @@ model TeamStandingSnapshot {
   team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@unique([seasonId, teamId, asOfDate], map: "uq_team_standing_snapshot_season_team_date")
+  @@index([seasonId, asOfDate, leagueRank, id], map: "ix_standing_season_date_rank_id")
+  @@index([seasonId, asOfDate, points, id], map: "ix_standing_season_date_points_id")
+  @@index([seasonId, asOfDate, pointPercentage, id], map: "ix_standing_season_date_point_pct_id")
   @@map("team_standing_snapshot")
   @@schema("analytics")
 }

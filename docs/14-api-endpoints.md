@@ -3,6 +3,12 @@
 All product paths below are relative to `/api/v1`. Unless stated otherwise,
 responses use the envelopes from `docs/04-api-specification.md`.
 
+Every core collection in this document is paginated using the shared `page`,
+`pageSize`, and `order` parameters, including leagues, seasons, teams, rosters,
+players, standings, games, and game-statistics collections. A valid filter that
+matches no rows returns an empty collection. A collection scoped beneath a
+missing path resource, such as a missing player's statistics, returns 404.
+
 ## Leagues and Seasons
 
 ### `GET /leagues`
@@ -75,7 +81,8 @@ The response is paginated because roster history may be added later.
 
 Required filter: `seasonId`.
 
-Optional filter: `asOfDate`; defaults to the latest available snapshot.
+Optional filter: `asOfDate`; an explicit value selects that exact snapshot
+date. When omitted, the latest available snapshot for the season is selected.
 
 Sort: `leagueRank`, `points`, `pointPercentage`, `name`. Default:
 `leagueRank asc`.

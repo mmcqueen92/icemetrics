@@ -64,6 +64,13 @@ request correlation, rate limiting, and security behavior. Product read
 controllers must explicitly select the documented live, standard, or historical
 cache policy rather than setting ad hoc cache headers.
 
+The implemented core read modules follow the controller-service-repository
+boundary. Cross-resource response summaries are imported from the module that
+owns the resource contract; repositories still query their own use case
+directly and never call another module's repository. Parent-scoped collection
+services verify the parent before querying children, while top-level filters
+return empty collections for unknown but valid identifiers.
+
 ## Completion Checklist
 
 - Contract and DTO agree.

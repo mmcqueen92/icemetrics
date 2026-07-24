@@ -62,6 +62,7 @@ The row is append-only except for `status` and `processed_at`.
 `id`, `code`, `name`, timestamps.
 
 - `code` is unique, uppercase, and uses `NHL` for the initial league.
+- The league list uses `(name, id)` for deterministic name ordering.
 
 ### `core.season`
 
@@ -70,6 +71,8 @@ The row is append-only except for `status` and `processed_at`.
 - Unique `(league_id, label)`.
 - `label` format is `YYYY-YYYY`.
 - `start_date < end_date`.
+- Read indexes support label ordering, descending start-date ordering, league
+  plus start-date filtering, and active-date containment.
 
 ### `core.team`
 
@@ -78,6 +81,8 @@ The row is append-only except for `status` and `processed_at`.
 - Unique `(league_id, abbreviation)`.
 - `abbreviation` is uppercase.
 - Historical teams remain present with `active = false`.
+- Read indexes support deterministic name/city ordering and the common
+  `(league_id, active, name, id)` list path.
 
 ### `core.player`
 
@@ -88,6 +93,8 @@ timestamps.
 - `current_team_id` uses `SET NULL` on team deletion.
 - Position values are provider-normalized to `C`, `L`, `R`, `D`, or `G`.
 - Player names are indexed case-insensitively for prefix and token search.
+- Deterministic first-name, last-name, position, active-list, and
+  team-roster indexes include the UUID tie-breaker.
 
 Historical team participation is preserved on `player_game_stat.team_id`;
 the MVP does not model contract or trade history.
@@ -102,8 +109,10 @@ the MVP does not model contract or trade history.
 - Scores are non-negative and required when status is `FINAL`.
 - `decision_type` is set only for a final game.
 - Unique `(season_id, home_team_id, away_team_id, starts_at)`.
-- Indexes: `(season_id, starts_at desc)`, `(home_team_id, starts_at desc)`,
-  `(away_team_id, starts_at desc)`, and `(status, starts_at)`.
+- Indexes: `(season_id, starts_at desc, id)`,
+  `(home_team_id, starts_at desc, id)`,
+  `(away_team_id, starts_at desc, id)`, `(status, starts_at, id)`, and
+  `(season_id, game_type, starts_at desc, id)`.
 
 ### `core.player_game_stat`
 
@@ -116,6 +125,8 @@ the MVP does not model contract or trade history.
 - The team must be one of the game's two teams; ingestion validates this and an
   integration test covers it.
 - Indexes: `(player_id, game_id)` and `(team_id, game_id)`.
+- Box-score indexes cover game/team filtering and the allowed points, shots,
+  and time-on-ice orderings with a stable player tie-breaker.
 - Points and shooting percentage are derived, not stored.
 
 ### `core.team_game_stat`
@@ -171,6 +182,9 @@ never exposed as IceMetrics resource IDs.
 `source_cutoff`, `computed_at`, `formula_version`.
 
 Unique `(season_id, team_id, as_of_date)`.
+
+Read indexes cover `(season_id, as_of_date)` followed by league rank, points,
+or point percentage and the UUID tie-breaker.
 
 ### `analytics.player_metric_snapshot`
 

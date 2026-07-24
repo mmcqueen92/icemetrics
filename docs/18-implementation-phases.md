@@ -86,6 +86,8 @@ Acceptance:
 
 ## Pass 5: Core Read API
 
+**Status:** Implemented and locally verified on 2026-07-23.
+
 Implement leagues, seasons, teams, rosters, players/search, games, and
 game-statistics endpoints against seeded data.
 

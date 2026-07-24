@@ -7,9 +7,9 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Response } from 'express';
-import type { Observable } from 'rxjs';
+import { type Observable, tap } from 'rxjs';
 
-import { CACHE_CONTROL_METADATA, type CachePolicy } from './cache-control.js';
+import { CACHE_CONTROL_METADATA, CachePolicy } from './cache-control.js';
 
 @Injectable()
 export class HttpCacheInterceptor implements NestInterceptor {
@@ -24,13 +24,44 @@ export class HttpCacheInterceptor implements NestInterceptor {
       [context.getHandler(), context.getClass()],
     );
 
+    const response = context.switchToHttp().getResponse<Response>();
+
+    if (policy === CachePolicy.Game) {
+      return next.handle().pipe(
+        tap((value: unknown) => {
+          response.setHeader(
+            'Cache-Control',
+            hasFinalStatus(value) ? CachePolicy.Historical : CachePolicy.Live,
+          );
+        }),
+      );
+    }
+
     if (policy) {
-      context
-        .switchToHttp()
-        .getResponse<Response>()
-        .setHeader('Cache-Control', policy);
+      response.setHeader('Cache-Control', policy);
     }
 
     return next.handle();
   }
+}
+
+function hasFinalStatus(value: unknown): boolean {
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'status' in value &&
+    value.status === 'FINAL'
+  ) {
+    return true;
+  }
+
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'data' in value &&
+    typeof value.data === 'object' &&
+    value.data !== null &&
+    'status' in value.data &&
+    value.data.status === 'FINAL'
+  );
 }

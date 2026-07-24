@@ -8,11 +8,13 @@ import {
 const VALIDATION_CODES: Readonly<Record<string, string>> = {
   isBoolean: 'INVALID_BOOLEAN',
   isDateString: 'INVALID_DATE',
+  isDateOnly: 'INVALID_DATE',
   isEnum: 'INVALID_VALUE',
   isIn: 'INVALID_VALUE',
   isInt: 'INVALID_INTEGER',
   isString: 'INVALID_STRING',
   isUUID: 'INVALID_UUID',
+  isUuid: 'INVALID_UUID',
   max: 'MAX_VALUE',
   maxLength: 'MAX_LENGTH',
   min: 'MIN_VALUE',
