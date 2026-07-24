@@ -59,6 +59,11 @@ Log use-case outcomes at module boundaries, not every method call. Include
 `requestId` or `jobExecutionId`, entity IDs, duration, and result counts. Never
 log entire provider payloads, database URLs, secrets, or personal access tokens.
 
+Controllers inherit the global validation, response envelope, error mapping,
+request correlation, rate limiting, and security behavior. Product read
+controllers must explicitly select the documented live, standard, or historical
+cache policy rather than setting ad hoc cache headers.
+
 ## Completion Checklist
 
 - Contract and DTO agree.

@@ -61,10 +61,11 @@ The root `package.json` must provide:
 
 Workspace package names are `@icemetrics/api` and `@icemetrics/web`.
 
-During Pass 1, the OpenAPI commands generate and verify the endpoint-free API
-scaffold document. Pass 4 activates Angular client generation and extends the
-same drift check to that generated client when the first product contract is
-introduced.
+The OpenAPI commands generate and verify both the API document and the Angular
+client. Client generation runs OpenAPI Generator 7.22.0 from the immutable
+container image pinned in `scripts/generate-openapi-client.mjs`, so Docker must
+be running. Pass 5 extends the contract and regenerated client with the first
+hockey read endpoints.
 
 ## Local URLs
 

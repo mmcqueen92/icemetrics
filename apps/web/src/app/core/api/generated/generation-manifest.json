@@ -1,0 +1,22 @@
+{
+  "files": [
+    "api.base.service.ts",
+    "api.module.ts",
+    "api/api.ts",
+    "configuration.ts",
+    "encoder.ts",
+    "index.ts",
+    "model/apiErrorBodyDto.ts",
+    "model/apiErrorDetailDto.ts",
+    "model/apiErrorResponseDto.ts",
+    "model/models.ts",
+    "model/paginationMetaDto.ts",
+    "model/paginationQueryDto.ts",
+    "param.ts",
+    "provide-api.ts",
+    "query.params.ts",
+    "variables.ts"
+  ],
+  "generator": "openapitools/openapi-generator-cli:v7.22.0@sha256:1f459499a7c794aa0ea769c3c9b0eb54806c5ad2f68510a0ebb9338d0a626ced",
+  "specSha256": "c09bad41408ca7c3570590aba2cc6b57e9d0325b764efcc92dbe222c22cb5c7b"
+}

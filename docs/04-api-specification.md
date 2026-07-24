@@ -125,6 +125,10 @@ the web service.
 - Operation IDs are stable and drive Angular client generation.
 - CI starts the API metadata generator and fails if the committed contract or
   generated web client differs.
+- The generated Angular client is committed at
+  `apps/web/src/app/core/api/generated`.
+- Client generation uses OpenAPI Generator 7.22.0 through the immutable
+  container image digest recorded in `scripts/generate-openapi-client.mjs`.
 - A breaking response or endpoint change requires a new API version or an
   explicitly approved pre-1.0 migration.
 

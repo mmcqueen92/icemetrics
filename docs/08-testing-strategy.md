@@ -71,8 +71,18 @@ by suite but must not share a database.
 Use coverage reports to identify untested behavior, not as a substitute for
 test design. Initial repository thresholds are 80% statements, branches,
 functions, and lines for backend domain/analytics code. Generated files,
-bootstrap files, DTO annotations, and migrations are excluded with documented
+bootstrap files, DTO annotations, migrations, and framework registration classes
+whose behavior is exercised by integration tests are excluded with documented
 configuration.
+
+## HTTP Platform Test Boundary
+
+The shared HTTP platform is tested as a running Nest application. Integration
+tests cover response and error envelopes, strict request validation, pagination
+metadata, request correlation, safe structured logs, security and CORS headers,
+rate-limit behavior, cache policy, conditional ETag requests, and health
+endpoint exceptions. Unit tests remain focused on deterministic helpers and
+service behavior rather than duplicating framework wiring assertions.
 
 Flaky tests are defects. Do not add retries to hide nondeterminism. Quarantine
 requires an issue, owner, and removal date.

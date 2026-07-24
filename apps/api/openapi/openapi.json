@@ -1,5 +1,5 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.1.0",
   "paths": {},
   "info": {
     "title": "IceMetrics API",
@@ -15,6 +15,172 @@
     }
   ],
   "components": {
-    "schemas": {}
+    "schemas": {
+      "ApiErrorDetailDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "example": "page"
+          },
+          "code": {
+            "type": "string",
+            "example": "MIN_VALUE"
+          },
+          "message": {
+            "type": "string",
+            "example": "page must be at least 1"
+          }
+        },
+        "required": [
+          "field",
+          "code",
+          "message"
+        ]
+      },
+      "ApiErrorBodyDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "VALIDATION_ERROR"
+          },
+          "message": {
+            "type": "string",
+            "example": "The request contains invalid values."
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorDetailDto"
+            }
+          },
+          "requestId": {
+            "type": "string",
+            "example": "0d9de4ac-57b8-4cb4-8895-33bcb4eb3396",
+            "format": "uuid"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-07-22T20:00:00.000Z",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "details",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "ApiErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 25,
+            "maximum": 100,
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "number",
+            "example": 0,
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "number",
+            "example": 0,
+            "minimum": 0
+          },
+          "sort": {
+            "type": "string",
+            "example": "lastName"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "sort",
+          "order"
+        ]
+      },
+      "PaginationQueryDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number",
+            "default": 1,
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1
+          },
+          "order": {
+            "type": "string",
+            "default": "asc",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        }
+      }
+    },
+    "headers": {
+      "RateLimitLimit": {
+        "description": "Maximum requests allowed in the current window.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimitRemaining": {
+        "description": "Requests remaining in the current window.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimitReset": {
+        "description": "Seconds until the current rate-limit window resets.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RequestId": {
+        "description": "Request correlation UUID.",
+        "schema": {
+          "format": "uuid",
+          "type": "string"
+        }
+      }
+    }
   }
 }

@@ -5,6 +5,7 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 
 import { DatabaseHealthService } from './database-health.service.js';
 
@@ -13,6 +14,7 @@ interface HealthResponse {
 }
 
 @ApiExcludeController()
+@SkipThrottle()
 @Controller('health')
 export class HealthController {
   constructor(

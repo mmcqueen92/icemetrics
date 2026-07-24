@@ -1,10 +1,11 @@
 # IceMetrics
 
 IceMetrics is a production-style NHL analytics platform built as a TypeScript
-monorepo. The repository currently contains the Pass 3 foundation: a NestJS
+monorepo. The repository currently contains the Pass 4 foundation: a NestJS
 modular-monolith API/job runner, an Angular standalone web application,
-containerized PostgreSQL, a migration-backed Prisma data model, deterministic
-development fixtures, health checks, isolated integration tests, and CI.
+containerized PostgreSQL, a migration-backed Prisma data model, a
+production-style HTTP platform, generated API artifacts, isolated integration
+tests, and CI.
 
 The project documentation in [`docs/`](docs/) is the source of truth. Read
 [`AGENTS.md`](AGENTS.md) before making implementation or architecture changes.
@@ -82,8 +83,8 @@ PostgreSQL 17 container for each suite.
 | `npm run security:audit`    | Fail on critical dependency vulnerabilities |
 | `npm run format`            | Format tracked source/configuration files   |
 | `npm run format:check`      | Verify formatting                           |
-| `npm run openapi:generate`  | Regenerate the checked OpenAPI document     |
-| `npm run openapi:check`     | Fail when OpenAPI output has drifted        |
+| `npm run openapi:generate`  | Regenerate OpenAPI and the Angular client   |
+| `npm run openapi:check`     | Fail when either generated artifact drifts  |
 
 Other commands belonging to later passes remain reserved in `package.json` and
 fail with a message naming the pass that implements them. They must not report
@@ -101,13 +102,12 @@ scripts/  Repository-level automation
 
 ## Current Scope
 
-Pass 3 includes workspace tooling, strict TypeScript, formatting, linting,
-Vitest, environment validation, OpenAPI drift checking, production builds,
-PostgreSQL 17 Compose infrastructure, health endpoints, Testcontainers,
-GitHub Actions, Dependabot, dependency auditing, secret scanning, the complete
-Prisma schema, reviewed SQL migrations, database constraints and indexes,
-deterministic seed data, and migration/constraint integration tests.
+Pass 4 includes the validated environment contract, Prisma client lifecycle,
+database-backed readiness, structured JSON logging and request correlation,
+strict validation, consistent success and error envelopes, pagination,
+rate-limiting, cache and ETag behavior, security headers, OpenAPI 3.1 generation,
+an immutable-generator Angular client, and platform integration tests.
 
-It deliberately excludes product API endpoints, authentication, ingestion
+It deliberately excludes hockey product endpoints, authentication, ingestion
 behavior, analytics calculations, browser end-to-end tests, and deployment
-infrastructure.
+infrastructure. Core read endpoints begin in Pass 5.

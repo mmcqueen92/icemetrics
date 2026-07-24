@@ -5,7 +5,13 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['.angular/**', 'coverage/**', 'dist/**', 'eslint.config.mjs'],
+    ignores: [
+      '.angular/**',
+      'coverage/**',
+      'dist/**',
+      'eslint.config.mjs',
+      'src/app/core/api/generated/**',
+    ],
   },
   {
     files: ['**/*.ts'],

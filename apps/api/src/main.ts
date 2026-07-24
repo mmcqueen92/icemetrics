@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { SwaggerModule } from '@nestjs/swagger';
+import { Logger } from 'nestjs-pino';
 
 import { AppModule } from './app.module.js';
 import { configureApplication } from './common/configure-application.js';
@@ -9,7 +10,10 @@ import type { Environment } from './common/config/environment.js';
 import { createOpenApiDocument } from './openapi/create-openapi-document.js';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
+  app.useLogger(app.get(Logger));
   configureApplication(app);
 
   const document = createOpenApiDocument(app);

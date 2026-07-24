@@ -51,6 +51,19 @@ The MVP uses:
 
 No Prometheus stack is deployed initially.
 
+## Implemented HTTP Logging Baseline
+
+The API emits newline-delimited JSON through Pino. Each request receives a UUID
+request ID, preserves a valid client-provided `X-Request-ID`, returns that value
+in the response header, and includes it in request and unexpected-error logs.
+Request headers and query strings are not logged. Authorization, cookies, API
+keys, database credentials, and provider payloads are treated as forbidden log
+data and are covered by automated tests.
+
+Successful health probes are silent. Client errors are logged at warning level,
+normal requests at information level, and unexpected failures at error level
+with a sanitized stack and stable error code.
+
 ## Alerts
 
 Configure alerts for:

@@ -33,7 +33,7 @@
     "jobs:run": "node scripts/pass-not-ready.mjs \"Pass 6\" \"individual jobs\"",
     "lint": "npm run lint --workspaces --if-present",
     "openapi:check": "npm run build --workspace @icemetrics/api && node scripts/check-openapi.mjs",
-    "openapi:generate": "npm run openapi:generate --workspace @icemetrics/api",
+    "openapi:generate": "npm run openapi:generate --workspace @icemetrics/api && node scripts/generate-openapi-client.mjs",
     "security:audit": "npm audit --audit-level=critical",
     "test": "npm run test:unit",
     "test:e2e": "node scripts/pass-not-ready.mjs \"Pass 10\" \"browser end-to-end testing\"",

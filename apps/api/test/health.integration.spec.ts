@@ -46,17 +46,21 @@ describe('health endpoints', () => {
   });
 
   it('keeps liveness independent from PostgreSQL', async () => {
-    await request(app.getHttpServer())
+    const response = await request(app.getHttpServer())
       .get('/health/live')
       .expect(200)
       .expect({ status: 'ok' });
+
+    expect(response.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(response.headers['ratelimit-limit']).toBeUndefined();
   });
 
   it('fails readiness while PostgreSQL is unavailable and recovers', async () => {
-    await request(app.getHttpServer())
+    const unavailable = await request(app.getHttpServer())
       .get('/health/ready')
       .expect(503)
       .expect({ status: 'unavailable' });
+    expect(unavailable.headers['ratelimit-limit']).toBeUndefined();
 
     const database = await startPostgresTestContainer(
       databaseConfiguration,

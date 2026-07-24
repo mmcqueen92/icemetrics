@@ -23,6 +23,11 @@ Initial production budgets:
 - Set an application statement timeout of 5 seconds for API queries and a
   documented longer timeout only for bounded analytics/job operations.
 
+The implemented Prisma service owns a bounded PostgreSQL pool with five-second
+connection and statement timeouts. Readiness uses that same pool with an
+additional two-second outward deadline so dependency stalls cannot hold the
+health endpoint open indefinitely.
+
 ## API
 
 - Use ETag and cache headers from `docs/04-api-specification.md`.
