@@ -1,0 +1,16 @@
+{
+  "_fixture": {
+    "endpoint": "/gamecenter/2025020700/right-rail",
+    "retrievedAt": "2026-07-24T07:00:00.000Z",
+    "sanitized": true
+  },
+  "teamGameStats": [
+    { "category": "sog", "awayValue": 29, "homeValue": 31 },
+    {
+      "category": "powerPlay",
+      "awayValue": "0/2",
+      "homeValue": "1/3"
+    },
+    { "category": "pim", "awayValue": 8, "homeValue": 6 }
+  ]
+}

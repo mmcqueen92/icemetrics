@@ -44,6 +44,9 @@ manual and scheduled executions cannot overlap.
 - Selects final games with missing statistics, changed upstream checksums, or a
   last successful import older than 24 hours during the seven-day correction
   window.
+- Fetches and preserves both the gamecenter box-score payload and its
+  right-rail team-stat payload; the latter is authoritative for shots,
+  power-play goals/opportunities, and penalty minutes.
 - Imports one box score transaction per game.
 - Rechecks final games at 1, 6, and 24 hours after first becoming final.
 

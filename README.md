@@ -1,11 +1,12 @@
 # IceMetrics
 
 IceMetrics is a production-style NHL analytics platform built as a TypeScript
-monorepo. The repository currently contains the Pass 5 foundation: a NestJS
+monorepo. The repository currently contains the Pass 6 foundation: a NestJS
 modular-monolith API/job runner, an Angular standalone web application,
 containerized PostgreSQL, a migration-backed Prisma data model, a
 production-style HTTP platform, public hockey read endpoints, generated API
-artifacts, isolated integration tests, and CI.
+artifacts, a fixture-backed NHL provider and ingestion/job framework, isolated
+integration tests, and CI.
 
 The project documentation in [`docs/`](docs/) is the source of truth. Read
 [`AGENTS.md`](AGENTS.md) before making implementation or architecture changes.
@@ -83,6 +84,9 @@ PostgreSQL 17 container for each suite.
 | `npm run security:audit`    | Fail on critical dependency vulnerabilities |
 | `npm run format`            | Format tracked source/configuration files   |
 | `npm run format:check`      | Verify formatting                           |
+| `npm run jobs:dispatch`     | Dispatch currently due logical jobs         |
+| `npm run jobs:run`          | Run one validated manual logical job        |
+| `npm run jobs:replay`       | Replay one preserved raw payload            |
 | `npm run openapi:generate`  | Regenerate OpenAPI and the Angular client   |
 | `npm run openapi:check`     | Fail when either generated artifact drifts  |
 
@@ -102,7 +106,7 @@ scripts/  Repository-level automation
 
 ## Current Scope
 
-Pass 5 includes the complete core read API for leagues, seasons, teams, rosters,
+Pass 6 includes the complete core read API for leagues, seasons, teams, rosters,
 players and search, games, player and team game statistics, and official
 standings snapshots. Every collection supports documented filtering, sorting,
 bounded pagination, stable ordering, validation, caching, and generated Angular
@@ -110,6 +114,12 @@ client types. PostgreSQL integration tests cover seeded results, empty and
 not-found behavior, derived values, read-path indexes, and representative query
 performance.
 
-It deliberately excludes provider ingestion behavior, analytics calculations
-and endpoints, product UI, authentication, browser end-to-end tests, and
-deployment infrastructure.
+The provider and ingestion framework adds exact raw-response checksums,
+runtime-validated NHL adapters, sanitized upstream fixtures, bounded HTTP
+timeouts/retries/concurrency, raw deduplication, import issues, structured job
+records, PostgreSQL advisory locks, abandoned-run reconciliation, validated
+manual commands, hourly dispatch policy, and network-free replay.
+
+It deliberately leaves core reference/game transformations to Passes 7 and 8
+and excludes analytics calculations and endpoints, product UI, authentication,
+browser end-to-end tests, and deployment infrastructure.

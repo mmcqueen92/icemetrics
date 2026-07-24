@@ -61,6 +61,20 @@ The root `package.json` must provide:
 
 Workspace package names are `@icemetrics/api` and `@icemetrics/web`.
 
+Implemented job-runner examples:
+
+```text
+npm run jobs:dispatch
+npm run jobs:run -- --job schedule --date 2026-01-15 --dry-run
+npm run jobs:replay -- --payload-id <uuid>
+```
+
+The runner validates UUIDs, real dates, paired inclusive date ranges of at most
+366 days, known job types, and safe fixture names before creating work.
+Pass 6 provides operational dispatch, replay, locking, raw storage, and job
+records. Reference and game transformations remain explicitly skipped until
+Passes 7 and 8 rather than reporting false import success.
+
 The OpenAPI commands generate and verify both the API document and the Angular
 client. Client generation runs OpenAPI Generator 7.22.0 from the immutable
 container image pinned in `scripts/generate-openapi-client.mjs`, so Docker must

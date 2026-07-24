@@ -1,0 +1,31 @@
+{
+  "_fixture": {
+    "endpoint": "/standings/2026-01-15",
+    "retrievedAt": "2026-07-22T12:00:00.000Z",
+    "sanitized": true
+  },
+  "standings": [
+    {
+      "teamAbbrev": { "default": "VAN" },
+      "teamName": {
+        "default": "Vancouver Canucks",
+        "fr": "Canucks de Vancouver"
+      },
+      "teamCommonName": { "default": "Canucks" },
+      "placeName": { "default": "Vancouver" },
+      "seasonId": 20252026,
+      "date": "2026-01-15",
+      "gamesPlayed": 45,
+      "wins": 25,
+      "losses": 15,
+      "otLosses": 5,
+      "points": 55,
+      "goalFor": 148,
+      "goalAgainst": 130,
+      "leagueSequence": 8,
+      "conferenceSequence": 4,
+      "divisionSequence": 2,
+      "pointPctg": 0.611111
+    }
+  ]
+}

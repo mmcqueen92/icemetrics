@@ -63,7 +63,9 @@ npm run jobs:replay --workspace @icemetrics/api -- --payload-id <uuid>
 ```
 
 Replay creates a new `JobExecution` with trigger `REPLAY`, links the existing
-payload, applies current validators/transformers, and records its own outcome.
+payload through the immutable `parameters.payloadId` value, applies current
+validators/transformers, and records its own outcome. The payload retains its
+original `job_execution_id`; replay never rewrites provenance.
 
 ## Failure Semantics
 

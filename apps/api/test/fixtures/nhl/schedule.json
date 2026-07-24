@@ -1,0 +1,35 @@
+{
+  "_fixture": {
+    "endpoint": "/schedule/2026-01-15",
+    "retrievedAt": "2026-07-22T12:00:00.000Z",
+    "sanitized": true
+  },
+  "gameWeek": [
+    {
+      "date": "2026-01-15",
+      "games": [
+        {
+          "id": 2025020701,
+          "season": 20252026,
+          "gameType": 2,
+          "startTimeUTC": "2026-01-16T00:00:00Z",
+          "gameState": "LIVE",
+          "venue": { "default": "Fixture Arena" },
+          "awayTeam": { "id": 10, "score": 1 },
+          "homeTeam": { "id": 23, "score": 2 }
+        },
+        {
+          "id": 2025020702,
+          "season": 20252026,
+          "gameType": 2,
+          "startTimeUTC": "2026-01-16T03:00:00Z",
+          "gameState": "FUT",
+          "gameScheduleState": "PPD",
+          "venue": null,
+          "awayTeam": { "id": 23, "score": null },
+          "homeTeam": { "id": 10, "score": null }
+        }
+      ]
+    }
+  ]
+}

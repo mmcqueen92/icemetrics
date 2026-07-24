@@ -1,0 +1,69 @@
+{
+  "_fixture": {
+    "endpoint": "/gamecenter/2025020700/boxscore",
+    "retrievedAt": "2026-07-22T12:00:00.000Z",
+    "sanitized": true
+  },
+  "id": 2025020700,
+  "season": 20252026,
+  "gameType": 2,
+  "startTimeUTC": "2026-01-15T03:00:00Z",
+  "gameState": "FINAL",
+  "venue": { "default": "Fixture Arena" },
+  "periodDescriptor": { "periodType": "OT" },
+  "gameOutcome": { "lastPeriodType": "OT" },
+  "awayTeam": { "id": 10, "score": 2, "sog": 29 },
+  "homeTeam": { "id": 23, "score": 3, "sog": 31 },
+  "playerByGameStats": {
+    "awayTeam": {
+      "forwards": [
+        {
+          "playerId": 1002,
+          "position": "C",
+          "goals": 0,
+          "assists": 1,
+          "sog": 2,
+          "pim": 2,
+          "plusMinus": -1,
+          "powerPlayGoals": 0,
+          "shorthandedGoals": 0,
+          "toi": "18:30"
+        }
+      ],
+      "defense": [],
+      "goalies": [
+        {
+          "playerId": 1004,
+          "position": "G",
+          "pim": 0,
+          "toi": "61:53"
+        }
+      ]
+    },
+    "homeTeam": {
+      "forwards": [
+        {
+          "playerId": 1001,
+          "position": "C",
+          "goals": 1,
+          "assists": 1,
+          "sog": 4,
+          "pim": 0,
+          "plusMinus": 2,
+          "powerPlayGoals": 1,
+          "shorthandedGoals": 0,
+          "toi": "20:05"
+        }
+      ],
+      "defense": [],
+      "goalies": [
+        {
+          "playerId": 1003,
+          "position": "G",
+          "pim": 0,
+          "toi": "61:20"
+        }
+      ]
+    }
+  }
+}

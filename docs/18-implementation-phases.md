@@ -101,6 +101,8 @@ Acceptance:
 
 ## Pass 6: Provider and Ingestion Framework
 
+**Status:** Implemented and locally verified on 2026-07-24.
+
 Deliver the provider interface, NHL adapter, runtime schemas, HTTP policy, raw
 storage, job records, advisory locks, replay, and dispatcher framework.
 

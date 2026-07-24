@@ -1,0 +1,25 @@
+{
+  "_fixture": {
+    "endpoint": "/team",
+    "retrievedAt": "2026-07-22T12:00:00.000Z",
+    "sanitized": true
+  },
+  "data": [
+    {
+      "id": 10,
+      "fullName": "Toronto Maple Leafs",
+      "franchiseId": 5,
+      "leagueId": 133,
+      "rawTricode": "TOR",
+      "triCode": "TOR"
+    },
+    {
+      "id": 23,
+      "fullName": "Vancouver Canucks",
+      "franchiseId": 20,
+      "leagueId": 133,
+      "rawTricode": "VAN",
+      "triCode": "VAN"
+    }
+  ]
+}

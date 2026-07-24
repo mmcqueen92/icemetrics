@@ -71,6 +71,19 @@ directly and never call another module's repository. Parent-scoped collection
 services verify the parent before querying children, while top-level filters
 return empty collections for unknown but valid identifiers.
 
+## Ingestion Boundaries
+
+Provider operations return exact response bytes and a lazy validator. Job
+orchestration persists the raw response before invoking that validator. NHL
+field shapes remain inside `ingestion/providers/nhl`; raw persistence and issue
+recording remain inside `ingestion/raw`; job coordination owns execution
+records, advisory locks, dispatch policy, replay, and exit semantics.
+
+Session-level advisory locks use dedicated PostgreSQL connections and stable
+keys. The dispatcher key never includes its scheduled timestamp. A contended
+job records `SKIPPED` immediately, and replay references its immutable source
+payload in job parameters without reassigning original provenance.
+
 ## Completion Checklist
 
 - Contract and DTO agree.

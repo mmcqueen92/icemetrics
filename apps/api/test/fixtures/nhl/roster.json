@@ -1,0 +1,40 @@
+{
+  "_fixture": {
+    "endpoint": "/roster/VAN/20252026",
+    "retrievedAt": "2026-07-22T12:00:00.000Z",
+    "sanitized": true
+  },
+  "forwards": [
+    {
+      "id": 1001,
+      "firstName": { "default": "Sample", "fr": "Exemple" },
+      "lastName": { "default": "Centre" },
+      "positionCode": "C",
+      "shootsCatches": "L",
+      "birthDate": "1998-02-03",
+      "active": true
+    }
+  ],
+  "defensemen": [
+    {
+      "id": 1002,
+      "firstName": { "default": "Example" },
+      "lastName": { "default": "Defender" },
+      "positionCode": "D",
+      "shootsCatches": "R",
+      "birthDate": null,
+      "active": true
+    }
+  ],
+  "goalies": [
+    {
+      "id": 1003,
+      "firstName": { "default": "Fixture" },
+      "lastName": { "default": "Goalie" },
+      "positionCode": "G",
+      "shootsCatches": "L",
+      "birthDate": "1995-11-12",
+      "active": true
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "_fixture": {
+    "endpoint": "/roster/VAN/20252026",
+    "retrievedAt": "2026-07-22T12:00:00.000Z",
+    "sanitized": true,
+    "purpose": "missing required player identifier"
+  },
+  "forwards": [
+    {
+      "firstName": { "default": "Invalid" },
+      "lastName": { "default": "Player" },
+      "positionCode": "C"
+    }
+  ],
+  "defensemen": [],
+  "goalies": []
+}

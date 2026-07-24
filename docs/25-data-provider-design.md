@@ -11,6 +11,7 @@ getRoster(teamAbbreviation, seasonExternalId)
 getSchedule(date)
 getTeamSeasonSchedule(teamAbbreviation, seasonExternalId)
 getGameBoxscore(gameExternalId)
+getGameTeamStats(gameExternalId, awayTeamExternalId, homeTeamExternalId)
 getPlayer(playerExternalId)
 getStandings(date)
 ```
@@ -19,7 +20,8 @@ Each operation returns:
 
 - an allowlisted request descriptor for raw-storage metadata;
 - the unmodified response body;
-- a validated provider DTO; and
+- a lazy runtime validator that produces the provider DTO only after storage;
+  and
 - retrieval metadata including fetch time and HTTP status.
 
 The adapter does not write to Prisma. Ingestion orchestration stores the raw
@@ -32,7 +34,7 @@ boundary. These DTOs contain no Prisma or NestJS types:
 
 ```text
 ProviderTeam
-  externalId, name, abbreviation, city, active
+  externalId, fullName, abbreviation
 
 ProviderPlayer
   externalId, firstName, lastName, position|null, shootsCatches|null,
@@ -52,14 +54,32 @@ ProviderTeamGameStat
   powerPlayGoals, powerPlayOpportunities, penaltyMinutes
 
 ProviderGameBoxscore
-  game: ProviderGame, players: ProviderPlayerGameStat[],
-  teams: ProviderTeamGameStat[]
+  game: ProviderGame, players: ProviderPlayerGameStat[]
+
+ProviderTeamGameSummary
+  away, home: teamExternalId, shotsFor, shotsAgainst, powerPlayGoals,
+  powerPlayOpportunities, penaltyMinutes
 
 ProviderStanding
-  teamExternalId, seasonExternalId, asOfDate, gamesPlayed, wins, losses,
-  overtimeLosses, points, goalsFor, goalsAgainst, leagueRank,
+  teamAbbreviation, teamName, city, seasonExternalId, asOfDate, gamesPlayed,
+  wins, losses, overtimeLosses, points, goalsFor, goalsAgainst, leagueRank,
   conferenceRank|null, divisionRank|null, pointPercentage, sourceCutoff
 ```
+
+The Stats API team directory supplies the stable numeric team ID, abbreviation,
+and full name but not current activity or decomposed city/common name. The
+standings response supplies current abbreviations and localized place/common
+names but no numeric team ID. The Teams import joins these two preserved,
+validated responses by uppercase abbreviation, then persists the Stats API ID
+as the provider identity. A missing or ambiguous join rejects the team instead
+of deriving names or identifiers from display text.
+
+The box-score response supplies game, player, score, and shot data but omits
+authoritative power-play opportunities. The separate right-rail response
+supplies official shots, power-play goals/opportunities, and penalty minutes
+for the same game. The Game Statistics import stores and validates both
+responses, verifies their team sides against the box score, and combines them
+before its bounded core transaction.
 
 Provider localized strings use the upstream default/English value. A required
 name without a default/English value rejects the entity instead of guessing a
@@ -109,6 +129,7 @@ Approved endpoint families:
 | Daily schedule | Web API `/schedule/{date}` |
 | Season backfill schedule | Web API `/club-schedule-season/{teamAbbreviation}/{seasonCode}` |
 | Game and player box score | Web API `/gamecenter/{gameId}/boxscore` |
+| Official team game statistics | Web API `/gamecenter/{gameId}/right-rail` |
 | Player profile | Web API `/player/{playerId}/landing` |
 
 Endpoint paths are configuration inside the NHL adapter, not scattered
@@ -127,6 +148,8 @@ not publish a developer SLA or a versioned compatibility contract. Therefore:
 - use exponential backoff beginning at 500 ms with jitter;
 - honor `Retry-After` when present;
 - do not retry other 4xx responses;
+- return any terminal HTTP response to ingestion for raw preservation before
+  lazy validation fails the job;
 - send a descriptive `User-Agent` with a project contact URL;
 - log endpoint family and status, never full bodies; and
 - fail the job rather than silently returning incomplete data.
@@ -152,6 +175,7 @@ Provider fixture tests must include:
 - a deliberately malformed response.
 
 Fixtures are sanitized snapshots and record their retrieval date and endpoint.
+They mirror upstream field names rather than pre-normalized application shapes.
 
 ## Provider Replacement
 
