@@ -12,6 +12,10 @@ export default defineConfig({
     coverage: {
       exclude: [
         'src/app.module.ts',
+        'src/analytics/analytics.module.ts',
+        'src/analytics/controllers/**',
+        'src/analytics/dto/**',
+        'src/analytics/repositories/**',
         'src/common/errors/api-error.dto.ts',
         'src/common/errors/api-exception.filter.ts',
         'src/common/health/health.controller.ts',
@@ -43,6 +47,8 @@ export default defineConfig({
       ],
       include: [
         'src/common/config/**/*.ts',
+        'src/analytics/domain/**/*.ts',
+        'src/analytics/services/**/*.ts',
         'src/common/errors/api-error.ts',
         'src/common/health/database-health.service.ts',
         'src/common/logging/*.ts',

@@ -145,6 +145,8 @@ Acceptance:
 
 ## Pass 9: Analytics Engine
 
+**Status:** Implemented and locally verified on 2026-07-25.
+
 Implement all catalogued formulas, hybrid persistence, recalculation, trends,
 comparisons, standings, and rankings endpoints.
 

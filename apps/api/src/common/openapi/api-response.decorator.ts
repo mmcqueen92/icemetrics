@@ -53,6 +53,31 @@ export function ApiSingleResponse(
   );
 }
 
+export function ApiCollectionResponse(
+  model: Type<unknown>,
+  description: string,
+  includeNotFound = false,
+): MethodDecorator {
+  return applyDecorators(
+    ApiExtraModels(model),
+    ApiOkResponse({
+      description,
+      headers: STANDARD_RESPONSE_HEADERS,
+      schema: {
+        properties: {
+          data: {
+            items: { $ref: getSchemaPath(model) },
+            type: 'array',
+          },
+        },
+        required: ['data'],
+        type: 'object',
+      },
+    }),
+    ...standardErrorDecorators(includeNotFound),
+  );
+}
+
 export function ApiPaginatedResponse(
   model: Type<unknown>,
   description: string,

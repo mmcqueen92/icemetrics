@@ -1,6 +1,554 @@
 {
   "openapi": "3.1.0",
   "paths": {
+    "/analytics/players/{id}/trends": {
+      "get": {
+        "operationId": "listPlayerTrends",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "seasonId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "window",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 10,
+              "type": "number",
+              "enum": [
+                5,
+                10,
+                20
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Player trend points.",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Maximum requests allowed in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests remaining in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the current rate-limit window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Request correlation UUID.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/PlayerTrendPointDto"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A path or query value is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The public request limit was exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected internal failure occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List player rolling trend points",
+        "tags": [
+          "Analytics"
+        ]
+      }
+    },
+    "/analytics/player-comparisons": {
+      "get": {
+        "operationId": "comparePlayers",
+        "parameters": [
+          {
+            "name": "playerIds",
+            "required": true,
+            "in": "query",
+            "description": "Two to five distinct comma-separated player UUIDs.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "seasonId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "window",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "season",
+              "type": "string",
+              "enum": [
+                "10",
+                "20",
+                "5",
+                "season"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A player comparison.",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Maximum requests allowed in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests remaining in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the current rate-limit window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Request correlation UUID.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PlayerComparisonDto"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A path or query value is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The public request limit was exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected internal failure occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Compare two to five players",
+        "tags": [
+          "Analytics"
+        ]
+      }
+    },
+    "/analytics/teams/rankings": {
+      "get": {
+        "operationId": "listTeamRankings",
+        "parameters": [
+          {
+            "name": "seasonId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "asOfDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date",
+              "example": "2025-10-11",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team power rankings.",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Maximum requests allowed in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests remaining in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the current rate-limit window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Request correlation UUID.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/TeamRankingDto"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A path or query value is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The public request limit was exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected internal failure occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List dated team power rankings",
+        "tags": [
+          "Analytics"
+        ]
+      }
+    },
+    "/analytics/teams/{id}/trends": {
+      "get": {
+        "operationId": "listTeamTrends",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "seasonId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "window",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 10,
+              "type": "number",
+              "enum": [
+                10
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team trend points.",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Maximum requests allowed in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests remaining in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the current rate-limit window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Request correlation UUID.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/TeamTrendPointDto"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A path or query value is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The public request limit was exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected internal failure occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List team rolling trend points",
+        "tags": [
+          "Analytics"
+        ]
+      }
+    },
     "/leagues": {
       "get": {
         "description": "Returns the paginated active league catalog. Cached for 3600 seconds.",
@@ -2140,71 +2688,79 @@
   ],
   "components": {
     "schemas": {
-      "LeagueSummaryDto": {
+      "MetricValuesDto": {
         "type": "object",
         "properties": {
-          "id": {
+          "pointsPerGame": {
+            "type": "number",
+            "nullable": true
+          },
+          "goalsPerGame": {
+            "type": "number",
+            "nullable": true
+          },
+          "assistsPerGame": {
+            "type": "number",
+            "nullable": true
+          },
+          "shootingPercentage": {
+            "type": "number",
+            "nullable": true
+          },
+          "consistencyScore": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "pointsPerGame",
+          "goalsPerGame",
+          "assistsPerGame",
+          "shootingPercentage",
+          "consistencyScore"
+        ]
+      },
+      "PlayerTrendPointDto": {
+        "type": "object",
+        "properties": {
+          "asOfGameId": {
             "type": "string",
             "format": "uuid"
           },
-          "code": {
+          "asOfDate": {
             "type": "string",
-            "example": "NHL"
+            "format": "date"
           },
-          "name": {
-            "type": "string",
-            "example": "National Hockey League"
-          }
-        },
-        "required": [
-          "id",
-          "code",
-          "name"
-        ]
-      },
-      "PaginationMetaDto": {
-        "type": "object",
-        "properties": {
-          "page": {
+          "window": {
             "type": "number",
-            "example": 1,
-            "minimum": 1
-          },
-          "pageSize": {
-            "type": "number",
-            "example": 25,
-            "maximum": 100,
-            "minimum": 1
-          },
-          "totalItems": {
-            "type": "number",
-            "example": 0,
-            "minimum": 0
-          },
-          "totalPages": {
-            "type": "number",
-            "example": 0,
-            "minimum": 0
-          },
-          "sort": {
-            "type": "string",
-            "example": "lastName"
-          },
-          "order": {
-            "type": "string",
             "enum": [
-              "asc",
-              "desc"
+              5,
+              10,
+              20
             ]
+          },
+          "sampleSize": {
+            "type": "number"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricValuesDto"
+          },
+          "formulaVersion": {
+            "type": "string"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         },
         "required": [
-          "page",
-          "pageSize",
-          "totalItems",
-          "totalPages",
-          "sort",
-          "order"
+          "asOfGameId",
+          "asOfDate",
+          "window",
+          "sampleSize",
+          "metrics",
+          "formulaVersion",
+          "computedAt"
         ]
       },
       "ApiErrorDetailDto": {
@@ -2341,6 +2897,290 @@
           "active"
         ]
       },
+      "PlayerSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "Alex"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Mercer"
+          },
+          "position": {
+            "type": "string",
+            "enum": [
+              "C",
+              "D",
+              "G",
+              "L",
+              "R"
+            ],
+            "nullable": true
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "currentTeam": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TeamSummaryDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "lastName",
+          "position",
+          "active",
+          "currentTeam"
+        ]
+      },
+      "PlayerComparisonItemDto": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "$ref": "#/components/schemas/PlayerSummaryDto"
+          },
+          "sampleSize": {
+            "type": "number"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricValuesDto"
+          }
+        },
+        "required": [
+          "player",
+          "sampleSize",
+          "metrics"
+        ]
+      },
+      "PlayerComparisonDto": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "$ref": "#/components/schemas/SeasonSummaryDto"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "10",
+              "20",
+              "5",
+              "season"
+            ]
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlayerComparisonItemDto"
+            }
+          },
+          "dataCutoff": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "formulaVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "season",
+          "window",
+          "players",
+          "dataCutoff",
+          "formulaVersion"
+        ]
+      },
+      "TeamRankingDto": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "number"
+          },
+          "team": {
+            "$ref": "#/components/schemas/TeamSummaryDto"
+          },
+          "seasonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "score": {
+            "type": "number"
+          },
+          "sampleSize": {
+            "type": "number"
+          },
+          "seasonPointPercentage": {
+            "type": "number"
+          },
+          "last10PointPercentage": {
+            "type": "number"
+          },
+          "scoringDifferentialPerGame": {
+            "type": "number"
+          },
+          "formulaVersion": {
+            "type": "string"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "rank",
+          "team",
+          "seasonId",
+          "asOfDate",
+          "score",
+          "sampleSize",
+          "seasonPointPercentage",
+          "last10PointPercentage",
+          "scoringDifferentialPerGame",
+          "formulaVersion",
+          "computedAt"
+        ]
+      },
+      "TeamTrendPointDto": {
+        "type": "object",
+        "properties": {
+          "team": {
+            "$ref": "#/components/schemas/TeamSummaryDto"
+          },
+          "seasonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOfGameId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "window": {
+            "type": "number",
+            "enum": [
+              10
+            ]
+          },
+          "sampleSize": {
+            "type": "number"
+          },
+          "pointPercentage": {
+            "type": "number"
+          },
+          "scoringDifferentialPerGame": {
+            "type": "number"
+          },
+          "recentPerformanceTrend": {
+            "type": "number"
+          },
+          "formulaVersion": {
+            "type": "string"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "team",
+          "seasonId",
+          "asOfGameId",
+          "asOfDate",
+          "window",
+          "sampleSize",
+          "pointPercentage",
+          "scoringDifferentialPerGame",
+          "recentPerformanceTrend",
+          "formulaVersion",
+          "computedAt"
+        ]
+      },
+      "LeagueSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "type": "string",
+            "example": "NHL"
+          },
+          "name": {
+            "type": "string",
+            "example": "National Hockey League"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ]
+      },
+      "PaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number",
+            "example": 1,
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "number",
+            "example": 25,
+            "maximum": 100,
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "number",
+            "example": 0,
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "number",
+            "example": 0,
+            "minimum": 0
+          },
+          "sort": {
+            "type": "string",
+            "example": "lastName"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "asc",
+              "desc"
+            ]
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "sort",
+          "order"
+        ]
+      },
       "TeamDetailDto": {
         "type": "object",
         "properties": {
@@ -2421,54 +3261,6 @@
           "position",
           "shootsCatches",
           "active"
-        ]
-      },
-      "PlayerSummaryDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "firstName": {
-            "type": "string",
-            "example": "Alex"
-          },
-          "lastName": {
-            "type": "string",
-            "example": "Mercer"
-          },
-          "position": {
-            "type": "string",
-            "enum": [
-              "C",
-              "D",
-              "G",
-              "L",
-              "R"
-            ],
-            "nullable": true
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "currentTeam": {
-            "nullable": true,
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/TeamSummaryDto"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "firstName",
-          "lastName",
-          "position",
-          "active",
-          "currentTeam"
         ]
       },
       "PlayerDetailDto": {

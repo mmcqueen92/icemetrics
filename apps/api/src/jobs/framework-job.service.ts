@@ -9,6 +9,7 @@ import { TeamsImportService } from '../ingestion/reference/teams-import.service.
 import { GameStatisticsImportService } from '../ingestion/games/game-statistics-import.service.js';
 import { ScheduleImportService } from '../ingestion/games/schedule-import.service.js';
 import { StandingsImportService } from '../ingestion/standings/standings-import.service.js';
+import { AnalyticsRefreshService } from '../analytics/services/analytics-refresh.service.js';
 
 import { JobCoordinatorService } from './job-coordinator.service.js';
 import { EMPTY_JOB_COUNTS, type JobRunResult } from './job.types.js';
@@ -28,15 +29,17 @@ export class FrameworkJobService {
     private readonly gameStatistics: GameStatisticsImportService,
     @Inject(StandingsImportService)
     private readonly standings: StandingsImportService,
+    @Inject(AnalyticsRefreshService)
+    private readonly analytics: AnalyticsRefreshService,
   ) {}
 
-  run(
+  async run(
     jobType: JobType,
     trigger: JobTrigger,
     parameters: Readonly<Record<string, unknown>>,
     scheduledFor?: Date,
   ): Promise<JobRunResult> {
-    return this.coordinator.run(
+    const result = await this.coordinator.run(
       {
         jobType,
         parameters,
@@ -59,6 +62,9 @@ export class FrameworkJobService {
         if (jobType === 'STANDINGS') {
           return this.standings.execute(executionId, parameters);
         }
+        if (jobType === 'ANALYTICS') {
+          return this.analytics.execute(executionId, parameters);
+        }
         return Promise.resolve({
           counts: EMPTY_JOB_COUNTS,
           errorSummary: {
@@ -69,5 +75,21 @@ export class FrameworkJobService {
         });
       },
     );
+    if (
+      jobType === 'GAME_STATISTICS' &&
+      Array.isArray(result.cursor?.['affectedGameIds']) &&
+      result.cursor['affectedGameIds'].length > 0
+    ) {
+      await this.run(
+        'ANALYTICS',
+        trigger,
+        {
+          affectedGameIds: result.cursor['affectedGameIds'],
+          earliestAffectedStartsAt: result.cursor['earliestAffectedStartsAt'],
+        },
+        scheduledFor,
+      );
+    }
+    return result;
   }
 }

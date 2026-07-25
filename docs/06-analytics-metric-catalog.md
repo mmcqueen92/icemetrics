@@ -145,12 +145,18 @@ Ranks are ordinal positions after tie-breaking; ranks are not shared.
 Display provider-published NHL standings snapshots because official tie-breaking
 rules include details outside the MVP game model. Store the provider values in
 the analytics schema with source cutoff and retrieval time. Power ranking still
-uses normalized statistics plus the stored official season point percentage.
+uses normalized statistics plus the latest stored official season point
+percentage at or before the ranking date. If that team has no official snapshot
+yet, use its normalized point percentage and points so one delayed standings
+payload does not remove an otherwise eligible team from the ranking.
 
 ## Refresh and Correction
 
-- Refresh affected rolling snapshots and rankings after a final box score is
-  first imported or corrected.
+- Refresh rolling snapshots and rankings after a final box score is first
+  imported or corrected. The MVP recomputes the affected season in deterministic
+  game order, then transactionally inserts, updates, or removes only snapshot
+  rows whose derived state changed. This bounded full-season reconciliation is
+  the correction strategy defined by ADR-013.
 - Run a full current-season reconciliation nightly.
 - A formula change increments `formulaVersion`, recalculates the current season,
   updates this catalog, and requires metric regression tests.

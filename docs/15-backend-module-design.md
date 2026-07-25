@@ -70,6 +70,14 @@ a template.
 - `common` contains genuinely cross-cutting infrastructure and no hockey
   business rules.
 
+The analytics module has two application boundaries. `AnalyticsRefreshService`
+builds versioned player, team, and ranking snapshots for the job runner, while
+`AnalyticsService` serves trends, comparisons, and rankings through thin HTTP
+controllers. Pure formulas live in `analytics/domain`; Prisma reads and
+snapshot reconciliation remain in analytics repositories. The API and job
+runner compose the same module, and analytics refresh commits independently
+after the core statistics transaction.
+
 Circular NestJS module references and `forwardRef` are prohibited. A circular
 dependency must be resolved by changing ownership or extracting a narrow
 application service.

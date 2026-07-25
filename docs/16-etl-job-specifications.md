@@ -117,8 +117,9 @@ games also appear in `cursor.affectedGameIds` with
 
 - Trigger: after any Game Statistics job that creates or updates records, and
   once nightly after 11:00 UTC.
-- Recalculates rolling metrics and rankings from the earliest affected game
-  forward.
+- Uses `affectedGameIds` to resolve the affected seasons, then performs the
+  deterministic full-season reconciliation defined by ADR-013. An explicit
+  `seasonId` scopes manual and nightly runs.
 - Uses normalized core statistics; official standings are used only for
   standings display and season point-percentage inputs.
 

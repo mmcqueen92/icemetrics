@@ -10,6 +10,7 @@ import { HttpCacheInterceptor } from './common/http/http-cache.interceptor.js';
 import { ResponseEnvelopeInterceptor } from './common/http/response-envelope.interceptor.js';
 import { LoggingModule } from './common/logging/logging.module.js';
 import { ApiThrottlerGuard } from './common/rate-limit/api-throttler.guard.js';
+import { AnalyticsModule } from './analytics/analytics.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { GamesModule } from './games/games.module.js';
 import { LeaguesModule } from './leagues/leagues.module.js';
@@ -38,6 +39,7 @@ import { TeamsModule } from './teams/teams.module.js';
       ],
     }),
     DatabaseModule,
+    AnalyticsModule,
     HealthModule,
     LeaguesModule,
     SeasonsModule,

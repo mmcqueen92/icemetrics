@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 
+import { AnalyticsModule } from '../analytics/analytics.module.js';
 import { IngestionModule } from '../ingestion/ingestion.module.js';
 import { AdvisoryLockService } from './advisory-lock.service.js';
 import { DispatcherService } from './dispatcher.service.js';
@@ -19,7 +20,7 @@ import { ReplayService } from './replay.service.js';
     JobExecutionService,
     ReplayService,
   ],
-  imports: [IngestionModule],
+  imports: [AnalyticsModule, IngestionModule],
   providers: [
     AdvisoryLockService,
     DispatcherService,

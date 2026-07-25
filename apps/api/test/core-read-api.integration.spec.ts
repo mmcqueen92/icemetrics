@@ -9,6 +9,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { configureApplication } from '../src/common/configure-application.js';
+import { AnalyticsRefreshService } from '../src/analytics/services/analytics-refresh.service.js';
 import { allocatePort } from './support/allocate-port.js';
 import {
   createPostgresTestDatabaseConfiguration,
@@ -33,6 +34,7 @@ describe('core read API', () => {
   let app: NestExpressApplication;
   let database: StartedPostgresTestDatabase;
   let pool: Pool;
+  let analyticsRefresh: AnalyticsRefreshService;
 
   beforeAll(async () => {
     const hostPort = await allocatePort();
@@ -56,9 +58,15 @@ describe('core read API', () => {
       imports: [AppModule],
     }).compile();
 
+    analyticsRefresh = module.get(AnalyticsRefreshService);
     app = module.createNestApplication<NestExpressApplication>();
     configureApplication(app);
     await app.init();
+    await analyticsRefresh.execute(
+      '00000000-0000-4000-8000-000000000999',
+      { seasonId: SEASON_ID },
+      new Date('2025-10-11T06:00:00Z'),
+    );
   });
 
   afterAll(async () => {
@@ -424,6 +432,179 @@ describe('core read API', () => {
       });
 
     await request(app.getHttpServer()).get('/api/v1/standings').expect(400);
+  });
+
+  it('returns materialized player and team trends with partial windows', async () => {
+    await request(app.getHttpServer())
+      .get(
+        `/api/v1/analytics/players/${MERCER_ID}/trends?seasonId=${SEASON_ID}&window=10`,
+      )
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data).toEqual([
+          expect.objectContaining({
+            asOfGameId: FINAL_GAME_ID,
+            formulaVersion: '1',
+            metrics: {
+              assistsPerGame: 0,
+              consistencyScore: null,
+              goalsPerGame: 4,
+              pointsPerGame: 4,
+              shootingPercentage: 50,
+            },
+            sampleSize: 1,
+            window: 10,
+          }),
+        ]);
+      });
+
+    await request(app.getHttpServer())
+      .get(`/api/v1/analytics/teams/${CANUCKS_ID}/trends?seasonId=${SEASON_ID}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data[0]).toMatchObject({
+          pointPercentage: 1,
+          recentPerformanceTrend: 0,
+          sampleSize: 1,
+          scoringDifferentialPerGame: 1,
+        });
+      });
+  });
+
+  it('compares season and rolling player metrics and validates distinct players', async () => {
+    await request(app.getHttpServer())
+      .get(
+        `/api/v1/analytics/player-comparisons?seasonId=${SEASON_ID}&playerIds=${MERCER_ID},${GOALTENDER_ID}`,
+      )
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data.players).toHaveLength(2);
+        expect(response.body.data.players[0]).toMatchObject({
+          metrics: {
+            assistsPerGame: 0,
+            consistencyScore: null,
+            goalsPerGame: 4,
+            pointsPerGame: 4,
+            shootingPercentage: 50,
+          },
+          sampleSize: 1,
+        });
+      });
+
+    await request(app.getHttpServer())
+      .get(
+        `/api/v1/analytics/player-comparisons?seasonId=${SEASON_ID}&playerIds=${MERCER_ID},${MERCER_ID}`,
+      )
+      .expect(400);
+  });
+
+  it('returns ranked teams with documented components and ordering', async () => {
+    await request(app.getHttpServer())
+      .get(`/api/v1/analytics/teams/rankings?seasonId=${SEASON_ID}`)
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data).toHaveLength(2);
+        expect(response.body.data[0]).toMatchObject({
+          formulaVersion: '1',
+          last10PointPercentage: 1,
+          rank: 1,
+          scoringDifferentialPerGame: 1,
+          seasonPointPercentage: 1,
+          team: { id: CANUCKS_ID },
+        });
+        expect(response.body.data[1]).toMatchObject({
+          rank: 2,
+          team: { id: OILERS_ID },
+        });
+      });
+  });
+
+  it('recalculates corrected downstream snapshots and preserves unchanged timestamps', async () => {
+    const unchanged = await analyticsRefresh.execute(
+      '00000000-0000-4000-8000-000000000998',
+      { affectedGameIds: [FINAL_GAME_ID] },
+      new Date('2025-10-11T07:00:00Z'),
+    );
+    expect(unchanged.counts.recordsUpdated).toBe(0);
+    expect(unchanged.counts.recordsUnchanged).toBeGreaterThan(0);
+
+    await pool.query(
+      `
+        UPDATE core.player_game_stat
+        SET goals = 2
+        WHERE game_id = $1::uuid AND player_id = $2::uuid
+      `,
+      [FINAL_GAME_ID, MERCER_ID],
+    );
+    const corrected = await analyticsRefresh.execute(
+      '00000000-0000-4000-8000-000000000997',
+      { affectedGameIds: [FINAL_GAME_ID] },
+      new Date('2025-10-11T08:00:00Z'),
+    );
+    expect(corrected.counts.recordsUpdated).toBeGreaterThan(0);
+
+    await request(app.getHttpServer())
+      .get(
+        `/api/v1/analytics/players/${MERCER_ID}/trends?seasonId=${SEASON_ID}&window=5`,
+      )
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data[0].metrics).toMatchObject({
+          goalsPerGame: 2,
+          pointsPerGame: 2,
+          shootingPercentage: 25,
+        });
+      });
+  });
+
+  it('excludes preseason statistics from regular-season analytics', async () => {
+    const preseasonGameId = '00000000-0000-4000-8000-000000000499';
+    await pool.query(
+      `
+        INSERT INTO core.game (
+          id, season_id, home_team_id, away_team_id, starts_at, game_type,
+          status, home_score, away_score, decision_type, created_at, updated_at
+        )
+        VALUES (
+          $1::uuid, $2::uuid, $3::uuid, $4::uuid,
+          TIMESTAMPTZ '2025-10-12 02:00:00+00', 'PRESEASON', 'FINAL',
+          1, 0, 'REGULATION', now(), now()
+        )
+      `,
+      [preseasonGameId, SEASON_ID, CANUCKS_ID, OILERS_ID],
+    );
+    await pool.query(
+      `
+        INSERT INTO core.player_game_stat (
+          id, game_id, player_id, team_id, goals, assists, shots,
+          penalty_minutes, plus_minus, power_play_goals, short_handed_goals,
+          time_on_ice_seconds, created_at, updated_at
+        )
+        VALUES (
+          '00000000-0000-4000-8000-000000000699', $1::uuid, $2::uuid,
+          $3::uuid, 1, 1, 1, 0, 1, 0, 0, 1200, now(), now()
+        )
+      `,
+      [preseasonGameId, MERCER_ID, CANUCKS_ID],
+    );
+    await analyticsRefresh.execute(
+      '00000000-0000-4000-8000-000000000996',
+      { affectedGameIds: [preseasonGameId] },
+      new Date('2025-10-12T03:00:00Z'),
+    );
+
+    await request(app.getHttpServer())
+      .get(
+        `/api/v1/analytics/players/${MERCER_ID}/trends?seasonId=${SEASON_ID}&window=5`,
+      )
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data).toHaveLength(1);
+        expect(response.body.data[0]).toMatchObject({
+          asOfGameId: FINAL_GAME_ID,
+          sampleSize: 1,
+        });
+      });
   });
 
   it('installs read-path indexes and keeps representative plans within budget', async () => {

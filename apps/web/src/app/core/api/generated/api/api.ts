@@ -1,3 +1,5 @@
+export * from './analytics.service';
+import { AnalyticsService } from './analytics.service';
 export * from './games.service';
 import { GamesService } from './games.service';
 export * from './leagues.service';
@@ -10,4 +12,4 @@ export * from './standings.service';
 import { StandingsService } from './standings.service';
 export * from './teams.service';
 import { TeamsService } from './teams.service';
-export const APIS = [GamesService, LeaguesService, PlayersService, SeasonsService, StandingsService, TeamsService];
+export const APIS = [AnalyticsService, GamesService, LeaguesService, PlayersService, SeasonsService, StandingsService, TeamsService];

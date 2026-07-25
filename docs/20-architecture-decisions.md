@@ -150,3 +150,24 @@ container rather than mocking Prisma.
 **Rationale:** One unit-test runner reduces configuration, HTTP integration
 tests exercise the real NestJS pipeline, and PostgreSQL-specific behavior must
 be tested against PostgreSQL.
+
+## ADR-013: Deterministic Full-Season Analytics Reconciliation
+
+**Status:** Accepted
+
+**Decision:** When final statistics are first imported or corrected, resolve
+the affected season and rebuild its rolling metrics and dated power rankings in
+`(game.startsAt, game.id)` order. Reconcile the calculated set against existing
+formula-version rows in one transaction: create missing rows, update changed
+rows, delete stale rows, and preserve unchanged rows and their `computedAt`
+timestamps. Nightly runs use the same path for the active season.
+
+**Rationale:** An NHL season is a bounded data set. A full-season rebuild makes
+correction propagation, removed statistics, same-time game ordering, and
+idempotency straightforward to audit without maintaining a second incremental
+algorithm. Differential persistence avoids unnecessary row churn.
+
+**Revisit when:** Measured production refresh duration cannot meet the
+15-minute freshness objective. An incremental replacement must produce
+byte-equivalent snapshot values and retain full-season reconciliation as a
+repair operation.
