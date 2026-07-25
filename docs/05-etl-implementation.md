@@ -31,6 +31,9 @@ issue.
 - Statistics use `(game_id, player_id)` and `(game_id, team_id)` uniqueness.
 - A corrected final box score updates normalized statistics, preserves both raw
   responses, and triggers analytics recalculation from the affected game date.
+- Unchanged correction checks are recorded in the Game Statistics execution
+  cursor rather than mutating an immutable, checksum-deduplicated raw payload's
+  original fetch timestamp.
 - Every logical job can be safely re-run with the same parameters.
 
 ## Transactions
@@ -86,3 +89,9 @@ Backfills are explicit manual CLI runs with a league, season, or date range.
 Date ranges are validated and processed in resumable chunks. The cursor is
 stored on `JobExecution`; restarting a failed backfill resumes after the last
 committed chunk.
+
+Schedule date ranges process one provider response at a time. Season schedule
+backfills process one active or historical league team at a time; duplicate
+game discovery is expected and converges through the game provider identity.
+The execution cursor records the last completed scope and all observed game
+external IDs.

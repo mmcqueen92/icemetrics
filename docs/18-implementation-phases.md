@@ -130,6 +130,8 @@ Acceptance:
 
 ## Pass 8: Games, Statistics, and Standings
 
+**Status:** Implemented and locally verified on 2026-07-24.
+
 Implement schedule, box-score, correction, and official standings imports plus
 hourly dispatch policy.
 

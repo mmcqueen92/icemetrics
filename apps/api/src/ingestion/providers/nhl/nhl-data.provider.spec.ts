@@ -10,6 +10,7 @@ import {
   ProviderValidationError,
 } from '../provider.errors.js';
 import { ProviderHttpClient } from '../provider-http.client.js';
+import type { ProviderCollection, ProviderGame } from '../provider.types.js';
 import { NhlDataProvider } from './nhl-data.provider.js';
 
 const FIXTURE_DIRECTORY = fileURLToPath(
@@ -99,8 +100,11 @@ describe('NhlDataProvider fixture contracts', () => {
       label: '2025-2026',
       startDate: '2025-10-07',
     });
-    expect(schedule.map((game) => game.status)).toEqual(['LIVE', 'POSTPONED']);
-    expect(seasonSchedule).toEqual([]);
+    expect(schedule.items.map((game) => game.status)).toEqual([
+      'LIVE',
+      'POSTPONED',
+    ]);
+    expect(seasonSchedule).toEqual({ items: [], rejections: [] });
     expect(boxscore.game).toMatchObject({
       decisionType: 'OVERTIME',
       homeScore: 3,
@@ -210,6 +214,38 @@ describe('NhlDataProvider fixture contracts', () => {
       items: [{ externalId: '10' }, { externalId: '23' }],
       rejections: [{ externalKey: '99' }],
     });
+  });
+
+  it('partitions schedule entities and maps pre-game and cancelled states', async () => {
+    const fixture = JSON.parse(
+      await readFile(`${FIXTURE_DIRECTORY}schedule.json`, 'utf8'),
+    ) as {
+      gameWeek: Array<{ games: Array<Record<string, unknown>> }>;
+    };
+    fixture.gameWeek[0]!.games[0] = {
+      ...fixture.gameWeek[0]!.games[0],
+      gameState: 'PRE',
+    };
+    fixture.gameWeek[0]!.games[1] = {
+      ...fixture.gameWeek[0]!.games[1],
+      gameScheduleState: 'CNCL',
+    };
+    fixture.gameWeek[0]!.games.push({ id: 999, gameState: 'UNKNOWN' });
+
+    const result = provider.validateStoredPayload(
+      'schedule',
+      fixture,
+      {},
+      new Date('2026-07-22T12:00:00Z'),
+    ) as ProviderCollection<ProviderGame>;
+
+    expect(result.items.map(({ status }) => status)).toEqual([
+      'PRE_GAME',
+      'CANCELLED',
+    ]);
+    expect(result.rejections).toEqual([
+      expect.objectContaining({ externalKey: '999' }),
+    ]);
   });
 
   it('rejects incomplete official team game statistics', () => {

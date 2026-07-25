@@ -113,7 +113,9 @@ export class NhlDataProvider implements HockeyDataProvider {
     );
   }
 
-  getSchedule(date: string): Promise<ProviderFetch<ProviderGame[]>> {
+  getSchedule(
+    date: string,
+  ): Promise<ProviderFetch<ProviderCollection<ProviderGame>>> {
     return this.fetch(
       this.webBaseUrl,
       {
@@ -129,7 +131,7 @@ export class NhlDataProvider implements HockeyDataProvider {
   getTeamSeasonSchedule(
     teamAbbreviation: string,
     seasonExternalId: string,
-  ): Promise<ProviderFetch<ProviderGame[]>> {
+  ): Promise<ProviderFetch<ProviderCollection<ProviderGame>>> {
     const team = normalizeTeam(teamAbbreviation);
     const season = normalizeIdentifier(seasonExternalId);
     return this.fetch(

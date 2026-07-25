@@ -18,16 +18,24 @@ import { ProviderValidationError } from '../src/ingestion/providers/provider.err
 import type {
   ProviderCollection,
   ProviderFetch,
+  ProviderGame,
+  ProviderGameBoxscore,
   ProviderPlayer,
   ProviderSeason,
   ProviderStanding,
   ProviderTeam,
+  ProviderTeamGameSummary,
 } from '../src/ingestion/providers/provider.types.js';
+import { GameImportRepository } from '../src/ingestion/games/game-import.repository.js';
+import { GameStatisticsImportService } from '../src/ingestion/games/game-statistics-import.service.js';
+import { ScheduleImportService } from '../src/ingestion/games/schedule-import.service.js';
 import { ImportIssueService } from '../src/ingestion/raw/import-issue.service.js';
 import { RawPayloadService } from '../src/ingestion/raw/raw-payload.service.js';
 import { PlayersImportService } from '../src/ingestion/reference/players-import.service.js';
 import { ReferenceImportRepository } from '../src/ingestion/reference/reference-import.repository.js';
 import { TeamsImportService } from '../src/ingestion/reference/teams-import.service.js';
+import { StandingsImportRepository } from '../src/ingestion/standings/standings-import.repository.js';
+import { StandingsImportService } from '../src/ingestion/standings/standings-import.service.js';
 import { AdvisoryLockService } from '../src/jobs/advisory-lock.service.js';
 import { JobCoordinatorService } from '../src/jobs/job-coordinator.service.js';
 import { JobExecutionService } from '../src/jobs/job-execution.service.js';
@@ -53,10 +61,13 @@ describe('provider and ingestion framework', () => {
   let coordinator: JobCoordinatorService;
   let database: StartedPostgresTestDatabase;
   let executions: JobExecutionService;
+  let gameStatisticsImport: GameStatisticsImportService;
   let module: TestingModule;
   let playersImport: PlayersImportService;
   let pool: Pool;
   let replay: ReplayService;
+  let scheduleImport: ScheduleImportService;
+  let standingsImport: StandingsImportService;
   let teamsImport: TeamsImportService;
   const referenceProvider = new ReferenceFixtureProvider();
 
@@ -88,6 +99,8 @@ describe('provider and ingestion framework', () => {
     executions = module.get(JobExecutionService);
     replay = module.get(ReplayService);
     const repository = module.get(ReferenceImportRepository);
+    const gameRepository = module.get(GameImportRepository);
+    const standingsRepository = module.get(StandingsImportRepository);
     const rawPayloads = module.get(RawPayloadService);
     const issues = module.get(ImportIssueService);
     teamsImport = new TeamsImportService(
@@ -101,6 +114,27 @@ describe('provider and ingestion framework', () => {
       referenceProvider,
       capture,
       repository,
+      rawPayloads,
+      issues,
+    );
+    scheduleImport = new ScheduleImportService(
+      referenceProvider,
+      capture,
+      gameRepository,
+      rawPayloads,
+      issues,
+    );
+    gameStatisticsImport = new GameStatisticsImportService(
+      referenceProvider,
+      capture,
+      gameRepository,
+      rawPayloads,
+      issues,
+    );
+    standingsImport = new StandingsImportService(
+      referenceProvider,
+      capture,
+      standingsRepository,
       rawPayloads,
       issues,
     );
@@ -508,6 +542,292 @@ describe('provider and ingestion framework', () => {
       current_team_id: null,
     });
   });
+
+  it('deduplicates schedule discovery and persists status progression', async () => {
+    const base = providerGame('2025020700', 'SCHEDULED');
+    referenceProvider.schedule = {
+      items: [base, base],
+      rejections: [],
+    };
+    const request = {
+      jobType: JobType.SCHEDULE,
+      parameters: { date: '2026-01-15' },
+      trigger: JobTrigger.MANUAL,
+    } as const;
+    const first = await coordinator.run(request, (executionId) =>
+      scheduleImport.execute(executionId, request.parameters),
+    );
+    const observedStatuses = [
+      'LIVE',
+      'POSTPONED',
+      'CANCELLED',
+      'FINAL',
+    ] as const;
+    const persistedStatuses = ['SCHEDULED'];
+    for (const status of observedStatuses) {
+      referenceProvider.schedule = {
+        items: [providerGame('2025020700', status)],
+        rejections: [],
+      };
+      await coordinator.run(request, (executionId) =>
+        scheduleImport.execute(executionId, request.parameters),
+      );
+      const persistedStatus = await pool.query<{ status: string }>(
+        'SELECT status::text FROM core.game LIMIT 1',
+      );
+      persistedStatuses.push(persistedStatus.rows[0]!.status);
+    }
+    referenceProvider.schedule = { items: [base], rejections: [] };
+    await coordinator.run(request, (executionId) =>
+      scheduleImport.execute(executionId, request.parameters),
+    );
+    const persisted = await pool.query<{
+      games: number;
+      provider_identities: number;
+      status: string;
+    }>(`
+      SELECT
+        (SELECT count(*)::int FROM core.game) AS games,
+        (SELECT count(*)::int FROM core.game_provider_identity) AS provider_identities,
+        (SELECT status::text FROM core.game LIMIT 1) AS status
+    `);
+
+    expect(first).toMatchObject({
+      counts: { recordsCreated: 1, recordsUnchanged: 1 },
+      status: JobStatus.SUCCEEDED,
+    });
+    expect(persistedStatuses).toEqual([
+      'SCHEDULED',
+      'LIVE',
+      'POSTPONED',
+      'CANCELLED',
+      'FINAL',
+    ]);
+    expect(persisted.rows[0]).toEqual({
+      games: 1,
+      provider_identities: 1,
+      status: 'FINAL',
+    });
+  });
+
+  it('imports complete final statistics and applies corrected box scores', async () => {
+    referenceProvider.boxscore = providerBoxscore(3);
+    referenceProvider.teamSummary = providerTeamSummary();
+    referenceProvider.profiles.set(
+      '1003',
+      providerPlayer('1003', 'Linus', 'Goalie'),
+    );
+    referenceProvider.profiles.set(
+      '1004',
+      providerPlayer('1004', 'Ken', 'Goalie'),
+    );
+    const game = await pool.query<{ id: string }>(
+      'SELECT id FROM core.game LIMIT 1',
+    );
+    const request = {
+      jobType: JobType.GAME_STATISTICS,
+      parameters: { gameId: game.rows[0]!.id },
+      trigger: JobTrigger.MANUAL,
+    } as const;
+    const first = await coordinator.run(request, (executionId) =>
+      gameStatisticsImport.execute(executionId, request.parameters),
+    );
+    referenceProvider.boxscore = providerBoxscore(4);
+    const correction = await coordinator.run(request, (executionId) =>
+      gameStatisticsImport.execute(executionId, request.parameters),
+    );
+    const persisted = await pool.query<{
+      away_goals: number;
+      boxscore_payloads: number;
+      home_goals: number;
+      home_score: number;
+      player_stats: number;
+      right_rail_payloads: number;
+      team_stats: number;
+    }>(`
+      SELECT
+        (SELECT home_score FROM core.game LIMIT 1) AS home_score,
+        (SELECT count(*)::int FROM core.player_game_stat) AS player_stats,
+        (SELECT count(*)::int FROM core.team_game_stat) AS team_stats,
+        (
+          SELECT goals_for
+          FROM core.team_game_stat
+          WHERE team_id = (
+            SELECT team_id FROM core.team_provider_identity
+            WHERE provider = 'nhl' AND external_id = '23'
+          )
+        ) AS home_goals,
+        (
+          SELECT goals_for
+          FROM core.team_game_stat
+          WHERE team_id = (
+            SELECT team_id FROM core.team_provider_identity
+            WHERE provider = 'nhl' AND external_id = '10'
+          )
+        ) AS away_goals,
+        (
+          SELECT count(*)::int FROM raw.provider_payload
+          WHERE resource_type = 'game-boxscore'
+        ) AS boxscore_payloads,
+        (
+          SELECT count(*)::int FROM raw.provider_payload
+          WHERE resource_type = 'game-team-stats'
+        ) AS right_rail_payloads
+    `);
+
+    expect(first).toMatchObject({
+      counts: { recordsCreated: 8, recordsFailed: 0 },
+      status: JobStatus.SUCCEEDED,
+    });
+    expect(correction).toMatchObject({
+      counts: { recordsFailed: 0, recordsUpdated: 4 },
+      cursor: {
+        affectedGameIds: [game.rows[0]!.id],
+        checkedExternalIds: ['2025020700'],
+      },
+      status: JobStatus.SUCCEEDED,
+    });
+    expect(persisted.rows[0]).toEqual({
+      away_goals: 2,
+      boxscore_payloads: 2,
+      home_goals: 4,
+      home_score: 4,
+      player_stats: 4,
+      right_rail_payloads: 1,
+      team_stats: 2,
+    });
+  });
+
+  it('rejects only an unresolved box-score player and preserves valid siblings', async () => {
+    referenceProvider.boxscore = {
+      ...providerBoxscore(4),
+      players: [
+        ...providerBoxscore(4).players,
+        providerPlayerStat('9999', '23', 0),
+      ],
+    };
+    const game = await pool.query<{ id: string }>(
+      'SELECT id FROM core.game LIMIT 1',
+    );
+    const result = await coordinator.run(
+      {
+        jobType: JobType.GAME_STATISTICS,
+        parameters: { gameId: game.rows[0]!.id },
+        trigger: JobTrigger.MANUAL,
+      },
+      (executionId) =>
+        gameStatisticsImport.execute(executionId, {
+          gameId: game.rows[0]!.id,
+        }),
+    );
+    const persisted = await pool.query<{
+      error_issues: number;
+      player_stats: number;
+    }>(
+      `
+      SELECT
+        (SELECT count(*)::int FROM core.player_game_stat) AS player_stats,
+        (
+          SELECT count(*)::int
+          FROM ops.import_issue
+          WHERE job_execution_id = $1
+            AND code = 'PLAYER_PROFILE_FETCH_FAILED'
+        ) AS error_issues
+    `,
+      [result.executionId],
+    );
+
+    expect(result).toMatchObject({
+      counts: { recordsFailed: 1, recordsUnchanged: 7 },
+      status: JobStatus.PARTIAL,
+    });
+    expect(persisted.rows[0]).toEqual({
+      error_issues: 1,
+      player_stats: 4,
+    });
+  });
+
+  it('imports dated official standings idempotently with queryable quality signals', async () => {
+    referenceProvider.standings = {
+      items: [
+        providerStanding('VAN', 'Vancouver', 'Canucks'),
+        providerStanding('TOR', 'Toronto', 'Maple Leafs'),
+      ],
+      rejections: [
+        { externalKey: 'bad-standing', issues: ['standing.points: invalid'] },
+      ],
+    };
+    const request = {
+      jobType: JobType.STANDINGS,
+      parameters: { date: '2026-01-15' },
+      trigger: JobTrigger.MANUAL,
+    } as const;
+    const partial = await coordinator.run(request, (executionId) =>
+      standingsImport.execute(executionId, request.parameters),
+    );
+    referenceProvider.standings = {
+      items: referenceProvider.standings.items,
+      rejections: [],
+    };
+    const repeat = await coordinator.run(request, (executionId) =>
+      standingsImport.execute(executionId, request.parameters),
+    );
+    referenceProvider.standings = {
+      items: referenceProvider.standings.items.map((standing) => ({
+        ...standing,
+        asOfDate: '2026-01-16',
+        sourceCutoff: '2026-01-16T12:00:00.000Z',
+      })),
+      rejections: [],
+    };
+    await coordinator.run(
+      { ...request, parameters: { date: '2026-01-16' } },
+      (executionId) =>
+        standingsImport.execute(executionId, { date: '2026-01-16' }),
+    );
+    const persisted = await pool.query<{
+      error_issues: number;
+      snapshot_dates: number;
+      snapshots: number;
+      successful_jobs: number;
+    }>(
+      `
+      SELECT
+        (SELECT count(*)::int FROM analytics.team_standing_snapshot) AS snapshots,
+        (
+          SELECT count(DISTINCT as_of_date)::int
+          FROM analytics.team_standing_snapshot
+        ) AS snapshot_dates,
+        (
+          SELECT count(*)::int
+          FROM ops.import_issue
+          WHERE job_execution_id = $1 AND severity = 'ERROR'
+        ) AS error_issues,
+        (
+          SELECT count(*)::int
+          FROM ops.job_execution
+          WHERE job_type IN ('SCHEDULE', 'GAME_STATISTICS', 'STANDINGS')
+            AND status = 'SUCCEEDED'
+        ) AS successful_jobs
+    `,
+      [partial.executionId],
+    );
+
+    expect(partial).toMatchObject({
+      counts: { recordsCreated: 2, recordsFailed: 1, recordsFetched: 3 },
+      status: JobStatus.PARTIAL,
+    });
+    expect(repeat).toMatchObject({
+      counts: { recordsUnchanged: 2 },
+      status: JobStatus.SUCCEEDED,
+    });
+    expect(persisted.rows[0]).toMatchObject({
+      error_issues: 1,
+      snapshot_dates: 2,
+      snapshots: 4,
+    });
+    expect(persisted.rows[0]!.successful_jobs).toBeGreaterThanOrEqual(3);
+  });
 });
 
 function manualTeamsRequest() {
@@ -567,7 +887,21 @@ function runNode(arguments_: string[], databaseUrl: string): Promise<void> {
 }
 
 class ReferenceFixtureProvider {
+  boxscore = providerBoxscore(3);
+  readonly profiles = new Map<string, ProviderPlayer>();
   readonly rosters = new Map<string, ProviderCollection<ProviderPlayer>>();
+  schedule: ProviderCollection<ProviderGame> = {
+    items: [],
+    rejections: [],
+  };
+  standings: ProviderCollection<ProviderStanding> = {
+    items: [
+      providerStanding('VAN', 'Vancouver', 'Canucks'),
+      providerStanding('TOR', 'Toronto', 'Maple Leafs'),
+    ],
+    rejections: [],
+  };
+  teamSummary = providerTeamSummary();
 
   getTeams(): Promise<ProviderFetch<ProviderCollection<ProviderTeam>>> {
     return Promise.resolve(
@@ -594,15 +928,7 @@ class ReferenceFixtureProvider {
   getStandings(
     date: string,
   ): Promise<ProviderFetch<ProviderCollection<ProviderStanding>>> {
-    return Promise.resolve(
-      fixtureFetch('standings', date, {
-        items: [
-          providerStanding('VAN', 'Vancouver', 'Canucks'),
-          providerStanding('TOR', 'Toronto', 'Maple Leafs'),
-        ],
-        rejections: [],
-      }),
-    );
+    return Promise.resolve(fixtureFetch('standings', date, this.standings));
   }
 
   getSeason(externalId: string): Promise<ProviderFetch<ProviderSeason>> {
@@ -628,10 +954,62 @@ class ReferenceFixtureProvider {
       ),
     );
   }
+
+  getSchedule(
+    date: string,
+  ): Promise<ProviderFetch<ProviderCollection<ProviderGame>>> {
+    return Promise.resolve(fixtureFetch('schedule', date, this.schedule));
+  }
+
+  getTeamSeasonSchedule(
+    abbreviation: string,
+    seasonExternalId: string,
+  ): Promise<ProviderFetch<ProviderCollection<ProviderGame>>> {
+    return Promise.resolve(
+      fixtureFetch(
+        'team-season-schedule',
+        `${abbreviation}:${seasonExternalId}`,
+        this.schedule,
+      ),
+    );
+  }
+
+  getGameBoxscore(
+    externalId: string,
+  ): Promise<ProviderFetch<ProviderGameBoxscore>> {
+    return Promise.resolve(
+      fixtureFetch('game-boxscore', externalId, this.boxscore),
+    );
+  }
+
+  getGameTeamStats(
+    externalId: string,
+  ): Promise<ProviderFetch<ProviderTeamGameSummary>> {
+    return Promise.resolve(
+      fixtureFetch('game-team-stats', externalId, this.teamSummary),
+    );
+  }
+
+  getPlayer(externalId: string): Promise<ProviderFetch<ProviderPlayer>> {
+    const player = this.profiles.get(externalId);
+    if (!player) {
+      return Promise.reject(new Error('Missing player fixture'));
+    }
+    return Promise.resolve(fixtureFetch('player', externalId, player));
+  }
 }
 
 function fixtureFetch<T>(
-  resourceType: 'roster' | 'season' | 'standings' | 'teams',
+  resourceType:
+    | 'game-boxscore'
+    | 'game-team-stats'
+    | 'player'
+    | 'roster'
+    | 'schedule'
+    | 'season'
+    | 'standings'
+    | 'team-season-schedule'
+    | 'teams',
   externalKey: string,
   value: T,
 ): ProviderFetch<T> {
@@ -691,5 +1069,80 @@ function providerPlayer(
     lastName,
     position: null,
     shootsCatches: null,
+  };
+}
+
+function providerGame(
+  externalId: string,
+  status: ProviderGame['status'],
+): ProviderGame {
+  const final = status === 'FINAL';
+  return {
+    awayScore: final ? 2 : null,
+    awayTeamExternalId: '10',
+    decisionType: final ? 'OVERTIME' : null,
+    externalId,
+    gameType: 'REGULAR_SEASON',
+    homeScore: final ? 3 : null,
+    homeTeamExternalId: '23',
+    seasonExternalId: '20252026',
+    startsAt: '2026-01-15T03:00:00.000Z',
+    status,
+    venue: 'Fixture Arena',
+  };
+}
+
+function providerBoxscore(homeScore: number): ProviderGameBoxscore {
+  return {
+    game: {
+      ...providerGame('2025020700', 'FINAL'),
+      homeScore,
+    },
+    players: [
+      providerPlayerStat('1001', '23', homeScore),
+      providerPlayerStat('1002', '10', 2),
+      providerPlayerStat('1003', '23', 0),
+      providerPlayerStat('1004', '10', 0),
+    ],
+  };
+}
+
+function providerPlayerStat(
+  playerExternalId: string,
+  teamExternalId: string,
+  goals: number,
+) {
+  return {
+    assists: 0,
+    goals,
+    penaltyMinutes: 0,
+    playerExternalId,
+    plusMinus: 0,
+    powerPlayGoals: 0,
+    shortHandedGoals: 0,
+    shots: goals,
+    teamExternalId,
+    timeOnIceSeconds: 1_200,
+  };
+}
+
+function providerTeamSummary(): ProviderTeamGameSummary {
+  return {
+    away: {
+      penaltyMinutes: 8,
+      powerPlayGoals: 0,
+      powerPlayOpportunities: 2,
+      shotsAgainst: 31,
+      shotsFor: 29,
+      teamExternalId: '10',
+    },
+    home: {
+      penaltyMinutes: 6,
+      powerPlayGoals: 1,
+      powerPlayOpportunities: 3,
+      shotsAgainst: 29,
+      shotsFor: 31,
+      teamExternalId: '23',
+    },
   };
 }

@@ -239,6 +239,12 @@ most recent qualifying cursors to implement three-snapshot inactivation
 without mutable absence counters. Cursor contents are job-owned resumability
 metadata, not a core entity source of truth.
 
+Game Statistics executions store successfully checked provider game IDs in
+`cursor.checkedExternalIds`. Created or updated internal game IDs are stored in
+`cursor.affectedGameIds` with `earliestAffectedStartsAt`. These fields drive
+correction cadence and downstream analytics invalidation without changing raw
+payload provenance.
+
 - `correlation_id` is indexed.
 - `(job_type, status, requested_at desc)` is indexed.
 - Counters are non-negative.

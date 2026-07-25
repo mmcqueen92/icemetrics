@@ -51,6 +51,13 @@ The MVP uses:
 
 No Prometheus stack is deployed initially.
 
+Pass 8 freshness checks use `ops.job_execution.finished_at` for job-level
+Schedule, Game Statistics, and Standings freshness. Per-game correction checks
+use `cursor.checkedExternalIds`; changed games use
+`cursor.affectedGameIds`. Data-quality details remain queryable by stable
+`ops.import_issue.code`. Checksum-deduplicated raw rows retain their first fetch
+time and are never mutated merely to record an unchanged observation.
+
 ## Implemented HTTP Logging Baseline
 
 The API emits newline-delimited JSON through Pino. Each request receives a UUID

@@ -150,13 +150,15 @@ export interface HockeyDataProvider {
     seasonExternalId: string,
   ): Promise<ProviderFetch<ProviderCollection<ProviderPlayer>>>;
   getSeason(seasonExternalId: string): Promise<ProviderFetch<ProviderSeason>>;
-  getSchedule(date: string): Promise<ProviderFetch<ProviderGame[]>>;
+  getSchedule(
+    date: string,
+  ): Promise<ProviderFetch<ProviderCollection<ProviderGame>>>;
   getStandings(
     date: string,
   ): Promise<ProviderFetch<ProviderCollection<ProviderStanding>>>;
   getTeamSeasonSchedule(
     teamAbbreviation: string,
     seasonExternalId: string,
-  ): Promise<ProviderFetch<ProviderGame[]>>;
+  ): Promise<ProviderFetch<ProviderCollection<ProviderGame>>>;
   getTeams(): Promise<ProviderFetch<ProviderCollection<ProviderTeam>>>;
 }

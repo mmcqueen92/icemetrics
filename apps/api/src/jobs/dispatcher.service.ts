@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { JobStatus, JobTrigger, JobType } from '../generated/prisma/client.js';
 
-import { dueJobs } from './dispatch-policy.js';
+import { childRequiresDispatcherFailure, dueJobs } from './dispatch-policy.js';
 import { FrameworkJobService } from './framework-job.service.js';
 import { JobCoordinatorService } from './job-coordinator.service.js';
 import { JobExecutionService } from './job-execution.service.js';
@@ -53,19 +53,24 @@ export class DispatcherService {
           now,
         });
         const results: JobRunResult[] = [];
+        const date = now.toISOString().slice(0, 10);
         for (const jobType of scheduled) {
+          const parameters =
+            jobType === JobType.TEAMS ||
+            jobType === JobType.SCHEDULE ||
+            jobType === JobType.STANDINGS
+              ? { date }
+              : {};
           results.push(
             await this.frameworkJobs.run(
               jobType,
               JobTrigger.SCHEDULED,
-              {},
+              parameters,
               now,
             ),
           );
         }
-        const failed = results.some(
-          (result) => result.status === JobStatus.FAILED,
-        );
+        const failed = results.some(childRequiresDispatcherFailure);
         return {
           counts: {
             ...EMPTY_JOB_COUNTS,

@@ -71,11 +71,11 @@ npm run jobs:replay -- --payload-id <uuid>
 
 The runner validates UUIDs, real dates, paired inclusive date ranges of at most
 366 days, known job types, and safe fixture names before creating work.
-Pass 7 provides operational Teams and Players transformations with stable
-provider identities, partitioned entity validation, repeat-run idempotency, and
-three-snapshot inactivation. Game, statistics, and standings transformations
-remain explicitly skipped until Pass 8 rather than reporting false import
-success.
+Pass 8 provides operational Teams, Players, Schedule, Game Statistics, and
+Standings transformations. Schedule and standings commands accept `--date`;
+Schedule additionally accepts a paired date range or `--season-id`, and Game
+Statistics accepts an internal `--game-id`. Analytics remains explicitly
+skipped until Pass 9 rather than reporting false import success.
 
 The OpenAPI commands generate and verify both the API document and the Angular
 client. Client generation runs OpenAPI Generator 7.22.0 from the immutable

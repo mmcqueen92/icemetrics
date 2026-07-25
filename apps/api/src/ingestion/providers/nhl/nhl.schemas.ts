@@ -85,12 +85,12 @@ const dailyScheduleResponse = z.object({
   gameWeek: z.array(
     z.object({
       date: dateOnly,
-      games: z.array(upstreamGame),
+      games: z.array(z.unknown()),
     }),
   ),
 });
 
-const seasonScheduleResponse = z.object({ games: z.array(upstreamGame) });
+const seasonScheduleResponse = z.object({ games: z.array(z.unknown()) });
 
 const upstreamSkaterGameStat = z.object({
   assists: nonNegativeInteger,
@@ -195,16 +195,26 @@ export function parseSeason(value: unknown): ProviderSeason {
   };
 }
 
-export function parseDailySchedule(value: unknown): ProviderGame[] {
+export function parseDailySchedule(
+  value: unknown,
+): ProviderCollection<ProviderGame> {
   const parsed = parse('schedule', dailyScheduleResponse, value);
-  return parsed.gameWeek.flatMap((day) =>
-    day.games.map((game) => mapGame(game)),
+  return partition(
+    'game',
+    parsed.gameWeek.flatMap((day) => day.games),
+    upstreamGame,
+    mapGame,
   );
 }
 
-export function parseSeasonSchedule(value: unknown): ProviderGame[] {
-  return parse('team-season-schedule', seasonScheduleResponse, value).games.map(
-    (game) => mapGame(game),
+export function parseSeasonSchedule(
+  value: unknown,
+): ProviderCollection<ProviderGame> {
+  return partition(
+    'game',
+    parse('team-season-schedule', seasonScheduleResponse, value).games,
+    upstreamGame,
+    mapGame,
   );
 }
 
@@ -308,7 +318,17 @@ function partition<Input, Output>(
   for (const value of values) {
     const result = schema.safeParse(value);
     if (result.success) {
-      items.push(map(result.data));
+      try {
+        items.push(map(result.data));
+      } catch (error) {
+        rejections.push({
+          externalKey: externalKey(value),
+          issues:
+            error instanceof ProviderValidationError
+              ? [...error.issues]
+              : [`${entityType}: transformation failed`],
+        });
+      }
       continue;
     }
     rejections.push({

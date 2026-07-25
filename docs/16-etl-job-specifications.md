@@ -66,6 +66,13 @@ marked `PROCESSED` only after their corresponding core transaction succeeds.
 - Fetches the provider's date-oriented schedule window.
 - Upserts scheduled games and status/score changes.
 - Deduplicates games by game provider identity.
+- Accepts one explicit date, an inclusive date range, or an internal season ID.
+  A season backfill fetches each team schedule and expects duplicate discovery;
+  when no scope is supplied, the current UTC date is used.
+- Processes one provider response and core transaction at a time. A failed
+  scope does not roll back completed scopes.
+- A final game cannot regress to a non-final state from a stale schedule
+  response. Provider-identity parent changes are rejected.
 
 ### Game Statistics
 
@@ -78,6 +85,20 @@ marked `PROCESSED` only after their corresponding core transaction succeeds.
   power-play goals/opportunities, and penalty minutes.
 - Imports one box score transaction per game.
 - Rechecks final games at 1, 6, and 24 hours after first becoming final.
+- After the 24-hour check, rechecks at most daily through the seven-day
+  correction window. Missing statistics remain eligible outside that window.
+- Resolves unknown box-score players by fetching and preserving their player
+  profiles before the game transaction. An unresolved player rejects only that
+  row and suppresses stale-row removal for the partial player snapshot.
+- Synchronizes player rows on a complete correction, upserts exactly two team
+  rows, and records warnings for zero time on ice or player-goal reconciliation
+  differences.
+
+Successful and partial executions store checked provider game IDs in
+`cursor.checkedExternalIds`. This execution history, rather than mutable raw
+payload timestamps, drives the 1/6/24-hour and daily cadence. Created or updated
+games also appear in `cursor.affectedGameIds` with
+`earliestAffectedStartsAt`, which is the Pass 9 analytics recalculation input.
 
 ### Standings
 
@@ -85,6 +106,12 @@ marked `PROCESSED` only after their corresponding core transaction succeeds.
   otherwise.
 - Imports the official dated standings snapshot.
 - Does not overwrite a previous date's snapshot.
+- Groups a response by provider season and as-of date and commits each dated
+  snapshot independently. Re-importing a date updates corrections in place;
+  importing another date preserves the earlier snapshot.
+- Uses formula version `nhl-official-v1`. The snapshot source cutoff is the
+  preserved raw payload's immutable fetch time, while job completion time
+  proves a later unchanged observation.
 
 ### Analytics
 
@@ -126,3 +153,7 @@ Every job:
 - validates all provider data;
 - has fixture-backed success, retry, partial-failure, and repeat-run tests; and
 - emits one structured completion log.
+
+The dispatcher supplies the current UTC date to Teams, Schedule, and Standings,
+runs logical jobs in dependency order, and fails when a child fails or when a
+partial child exceeds the documented 1% failed-entity threshold.

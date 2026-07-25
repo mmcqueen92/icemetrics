@@ -60,6 +60,20 @@ Create an error-level operational alert when:
   games exist; or
 - an upstream fixture contract fails in CI.
 
+## Queryable Pipeline Signals
+
+Freshness and quality state is queryable without a separate monitoring store:
+
+- `ops.job_execution` terminal status and `finished_at` show the latest
+  successful Schedule, Game Statistics, and Standings runs;
+- job counts expose failed-entity ratios, and the dispatcher fails when a
+  partial child exceeds 1%;
+- Game Statistics cursors identify games checked and games changed;
+- `ops.import_issue` records stable schedule, identity, box-score,
+  reconciliation, and standings quality codes; and
+- raw resource type, external key, checksum, status, and fetch time provide the
+  preserved correction history.
+
 ## Repair
 
 Repairs replay preserved raw payloads or run a bounded refetch. Never edit a raw

@@ -1,4 +1,5 @@
 import { JobType } from '../generated/prisma/client.js';
+import type { JobRunResult } from './job.types.js';
 
 const HOUR_MS = 60 * 60 * 1_000;
 const DAY_MS = 24 * HOUR_MS;
@@ -40,6 +41,17 @@ export function dueJobs(state: DispatchState): JobType[] {
     due.push(JobType.ANALYTICS);
   }
   return due;
+}
+
+export function childRequiresDispatcherFailure(result: JobRunResult): boolean {
+  if (result.status === 'FAILED') {
+    return true;
+  }
+  return (
+    result.status === 'PARTIAL' &&
+    result.counts.recordsFetched > 0 &&
+    result.counts.recordsFailed / result.counts.recordsFetched > 0.01
+  );
 }
 
 function elapsed(now: Date, previous: Date | null | undefined): number {

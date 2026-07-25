@@ -33,6 +33,11 @@ Container-level shape failures reject the payload. A malformed collection
 member records its external key when available and its validation issues while
 valid siblings remain available for a bounded transform.
 
+Team, roster, daily schedule, season schedule, and standings operations use
+this partitioned collection contract. Game box score, team summary, player
+profile, and season metadata are indivisible payloads because their required
+cross-record structure must validate as a unit.
+
 ## Internal Provider DTOs
 
 All upstream identifiers are normalized to non-empty strings at the adapter

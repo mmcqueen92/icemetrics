@@ -1,7 +1,7 @@
 # IceMetrics
 
 IceMetrics is a production-style NHL analytics platform built as a TypeScript
-monorepo. The repository currently contains the Pass 7 foundation: a NestJS
+monorepo. The repository currently contains the Pass 8 foundation: a NestJS
 modular-monolith API/job runner, an Angular standalone web application,
 containerized PostgreSQL, a migration-backed Prisma data model, a
 production-style HTTP platform, public hockey read endpoints, generated API
@@ -106,7 +106,7 @@ scripts/  Repository-level automation
 
 ## Current Scope
 
-Pass 7 includes the complete core read API for leagues, seasons, teams, rosters,
+Pass 8 includes the complete core read API for leagues, seasons, teams, rosters,
 players and search, games, player and team game statistics, and official
 standings snapshots. Every collection supports documented filtering, sorting,
 bounded pagination, stable ordering, validation, caching, and generated Angular
@@ -125,6 +125,11 @@ preserve valid siblings from partitionable invalid collections; remain
 idempotent on repeat runs; and delay inactivation until three complete,
 successful snapshots agree that a record is absent.
 
-It deliberately leaves game, statistics, and standings transformations to Pass
-8 and excludes analytics calculations and endpoints, product UI,
-authentication, browser end-to-end tests, and deployment infrastructure.
+Game-data jobs now import schedule status transitions, final player/team
+statistics, corrected box scores, and dated official standings. Provider
+identities deduplicate schedule discovery, immutable raw checksums preserve
+corrections, and job cursors expose correction/freshness state.
+
+It deliberately leaves analytics calculations and endpoints to Pass 9 and
+excludes product UI, authentication, browser end-to-end tests, and deployment
+infrastructure.
