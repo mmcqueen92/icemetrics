@@ -60,6 +60,12 @@ clear empty state and retain navigation.
 
 Missing player renders the resource-not-found view, not a generic failure.
 
+Pass 11 renders the API-owned 5/10/20 rolling metric summaries and their sample
+sizes. The ECharts trend visualization and a dedicated API-owned single-player
+season aggregate are delivered with the analytics presentation work in Pass
+12. The browser must not derive a season aggregate from paginated game rows or
+duplicate metric formulas.
+
 ## Team Explorer (`/teams`)
 
 - Season selector and full standings table.
@@ -108,3 +114,7 @@ Every data region implements:
 - recoverable error with retry;
 - not-found state for missing resources; and
 - stale-data notice when freshness thresholds are exceeded.
+
+Pass 11 uses the two-hour active-season timeliness target when a source cutoff
+is available. Historical seasons remain dated snapshots and are not labelled
+stale merely because they are old.

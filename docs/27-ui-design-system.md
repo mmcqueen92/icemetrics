@@ -45,6 +45,11 @@ foundations. Page headers, filters, tables, selectors, status badges, metric
 tiles, charts, and dialogs are added with their first production consumer in
 Passes 11 and 12; do not create unused wrappers in advance.
 
+Pass 11 implements page headers, responsive surfaces/cards, filter bars,
+season/date selectors, sortable and paginated tables, status badges, and metric
+tiles. Tables retain semantic headers and horizontally scroll on compact
+screens. Chart frames and dialogs still wait for their Pass 12 consumers.
+
 ## Color and Status
 
 Define semantic tokens rather than hard-coded colors:

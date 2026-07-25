@@ -32,6 +32,17 @@ dismissible notification boundary.
 Initial document navigation preserves normal browser tab order so the skip link
 is first. Subsequent client-side route changes move focus to the main landmark.
 
+Pass 11 adds a typed `ExplorerApiService` facade over the generated client's
+positional methods. Explorer components pass object-shaped query state into
+that facade; it does not duplicate transport DTOs or domain calculations.
+Player search is debounced by 300 ms, ignores one-character terms, and route
+changes cancel superseded HTTP streams through `switchMap`.
+
+Team, player, and game filters, pagination, and sorting are read from URL query
+parameters. A missing season resolves to the newest stored season and is
+written back with `replaceUrl`, so the resulting view is shareable without
+adding history noise.
+
 ## Source Layout
 
 ```text

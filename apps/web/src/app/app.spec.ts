@@ -1,14 +1,50 @@
 import { provideRouter, Router } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 
 import { IceMetricsApp } from './app';
 import { routes } from './app.routes';
+import { ExplorerApiService } from './core/api/explorer-api.service';
+
+const meta = {
+  order: 'asc' as const,
+  page: 1,
+  pageSize: 25,
+  sort: 'name',
+  totalItems: 0,
+  totalPages: 0,
+};
+
+const explorerApi = {
+  listGames: vi.fn(() => of({ data: [], meta })),
+  listPlayers: vi.fn(() => of({ data: [], meta })),
+  listSeasons: vi.fn(() =>
+    of({
+      data: [
+        {
+          endDate: '2026-06-30',
+          id: 'season-1',
+          label: '2025–26',
+          leagueId: 'league-1',
+          startDate: '2025-10-01',
+        },
+      ],
+      meta,
+    }),
+  ),
+  listStandings: vi.fn(() => of({ data: [], meta })),
+  listTeamRankings: vi.fn(() => of({ data: [] })),
+  listTeams: vi.fn(() => of({ data: [], meta })),
+};
 
 describe('IceMetricsApp', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [IceMetricsApp],
-      providers: [provideRouter(routes)],
+      providers: [
+        provideRouter(routes),
+        { provide: ExplorerApiService, useValue: explorerApi },
+      ],
     }).compileComponents();
   });
 

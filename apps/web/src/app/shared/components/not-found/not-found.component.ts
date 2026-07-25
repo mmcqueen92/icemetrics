@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterLink } from '@angular/router';
 
@@ -37,12 +37,15 @@ import { RouterLink } from '@angular/router';
   template: `
     <section aria-labelledby="not-found-title">
       <p class="code">404</p>
-      <h1 id="not-found-title">That page is offside.</h1>
-      <p class="message">
-        The address may be incorrect, or the page may have moved.
-      </p>
+      <h1 id="not-found-title">{{ title() }}</h1>
+      <p class="message">{{ message() }}</p>
       <a mat-flat-button routerLink="/">Return to dashboard</a>
     </section>
   `,
 })
-export class NotFoundComponent {}
+export class NotFoundComponent {
+  readonly message = input(
+    'The address may be incorrect, or the page may have moved.',
+  );
+  readonly title = input('That page is offside.');
+}

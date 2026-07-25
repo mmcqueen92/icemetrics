@@ -54,6 +54,10 @@ The Pass 10 production build emits each top-level feature as a lazy chunk. Its
 initial bundle is 330.00 KB raw with an 82.68 KB estimated transfer size, below
 the configured warning threshold.
 
+After Pass 11, dashboard, player, team, and game explorers remain separate lazy
+chunks. The production initial bundle is 364.81 KB raw with a 92.21 KB estimated
+transfer size, still below the configured warning threshold.
+
 ## Scaling Triggers
 
 Consider additional infrastructure only when a recorded load test or production

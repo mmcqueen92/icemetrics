@@ -175,6 +175,8 @@ Acceptance:
 
 ## Pass 11: Explorer Features
 
+**Status:** Implemented and locally verified on 2026-07-25.
+
 Implement dashboard, team, player, and game explorer/detail flows.
 
 Acceptance:

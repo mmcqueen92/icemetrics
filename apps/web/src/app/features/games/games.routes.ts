@@ -1,28 +1,17 @@
 import type { Routes } from '@angular/router';
 
-import { FeaturePlaceholderPageComponent } from '../../shared/components/feature-placeholder/feature-placeholder';
+import { GameDetailPageComponent } from './game-detail-page';
+import { GameListPageComponent } from './game-list-page';
 
 export const GAME_ROUTES: Routes = [
   {
     path: '',
-    component: FeaturePlaceholderPageComponent,
-    data: {
-      description:
-        'Explore schedules and results without blurring scheduled, live, final, postponed, or cancelled states.',
-      eyebrow: 'Game explorer',
-      title: 'Every game, clearly stated.',
-    },
+    component: GameListPageComponent,
     title: 'Games · IceMetrics',
   },
   {
     path: ':id',
-    component: FeaturePlaceholderPageComponent,
-    data: {
-      description:
-        'Score, team statistics, and player box scores presented with the status and cutoff they require.',
-      eyebrow: 'Game detail',
-      title: 'From final score to full context.',
-    },
+    component: GameDetailPageComponent,
     title: 'Game detail · IceMetrics',
   },
 ];

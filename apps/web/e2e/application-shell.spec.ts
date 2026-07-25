@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 
+import { mockExplorerApi } from './mock-api';
+
+test.beforeEach(async ({ page }) => mockExplorerApi(page));
+
 test('navigates lazy feature routes with keyboard-visible shell semantics', async ({
   page,
 }) => {
@@ -10,6 +14,9 @@ test('navigates lazy feature routes with keyboard-visible shell semantics', asyn
       level: 1,
       name: 'See the game beneath the score.',
     }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Latest results' }),
   ).toBeVisible();
   await expect(
     page.getByRole('navigation', { name: 'Primary navigation' }),
