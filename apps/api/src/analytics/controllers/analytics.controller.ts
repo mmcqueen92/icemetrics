@@ -14,6 +14,8 @@ import {
 import {
   PlayerComparisonDto,
   PlayerComparisonQueryDto,
+  PlayerSeasonSummaryDto,
+  PlayerSeasonSummaryQueryDto,
   PlayerTrendPointDto,
   PlayerTrendQueryDto,
   TeamRankingDto,
@@ -29,6 +31,22 @@ export class AnalyticsController {
   constructor(
     @Inject(AnalyticsService) private readonly analytics: AnalyticsService,
   ) {}
+
+  @Get('players/:id/summary')
+  @CacheControl(CachePolicy.Standard)
+  @ApiOperation({
+    operationId: 'getPlayerSeasonSummary',
+    summary: 'Get a player season metric summary',
+  })
+  @ApiParam({ format: 'uuid', name: 'id' })
+  @ApiSingleResponse(PlayerSeasonSummaryDto, 'A player season summary.')
+  playerSeasonSummary(
+    @ValidatedParams(UuidParamDto) params: UuidParamDto,
+    @ValidatedQuery(PlayerSeasonSummaryQueryDto)
+    query: PlayerSeasonSummaryQueryDto,
+  ): Promise<PlayerSeasonSummaryDto> {
+    return this.analytics.playerSeasonSummary(params.id, query);
+  }
 
   @Get('players/:id/trends')
   @CacheControl(CachePolicy.Standard)

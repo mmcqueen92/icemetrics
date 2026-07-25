@@ -199,6 +199,11 @@ Acceptance:
 - charts are lazy-loaded and have accessible table alternatives; and
 - analytics end-to-end and performance tests pass.
 
+Status: implemented. The analytics route provides URL-driven player comparison
+and team-ranking views, server-owned player season summaries, lazy ECharts
+visualizations, and semantic table equivalents. Unit, integration, browser,
+OpenAPI drift, and production bundle verification cover the delivered surface.
+
 ## Pass 13: Production Deployment
 
 Deliver Render Blueprint, staging/production environments, production image,

@@ -157,6 +157,58 @@ export async function mockExplorerApi(page: Page): Promise<void> {
         ],
       });
     }
+    if (path === `/analytics/players/${player.id}/summary`) {
+      return respond(route, {
+        data: {
+          dataCutoff: game.startsAt,
+          formulaVersion: '1',
+          metrics: {
+            assistsPerGame: 1,
+            consistencyScore: null,
+            goalsPerGame: 2,
+            pointsPerGame: 3,
+            shootingPercentage: 25,
+          },
+          player,
+          sampleSize: 1,
+          season,
+        },
+      });
+    }
+    if (path === '/analytics/player-comparisons') {
+      return respond(route, {
+        data: {
+          dataCutoff: game.startsAt,
+          formulaVersion: '1',
+          players: [
+            {
+              metrics: {
+                assistsPerGame: 1,
+                consistencyScore: null,
+                goalsPerGame: 2,
+                pointsPerGame: 3,
+                shootingPercentage: 25,
+              },
+              player,
+              sampleSize: 1,
+            },
+            {
+              metrics: {
+                assistsPerGame: 0,
+                consistencyScore: null,
+                goalsPerGame: 1,
+                pointsPerGame: 1,
+                shootingPercentage: 10,
+              },
+              player: { ...player, id: 'player-2', lastName: 'Riley' },
+              sampleSize: 1,
+            },
+          ],
+          season,
+          window: url.searchParams.get('window') ?? 'season',
+        },
+      });
+    }
     if (path === '/standings') {
       return respond(
         route,

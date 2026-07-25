@@ -1,6 +1,132 @@
 {
   "openapi": "3.1.0",
   "paths": {
+    "/analytics/players/{id}/summary": {
+      "get": {
+        "operationId": "getPlayerSeasonSummary",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "seasonId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A player season summary.",
+            "headers": {
+              "RateLimit-Limit": {
+                "description": "Maximum requests allowed in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Remaining": {
+                "description": "Requests remaining in the current window.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "RateLimit-Reset": {
+                "description": "Seconds until the current rate-limit window resets.",
+                "schema": {
+                  "type": "integer"
+                }
+              },
+              "X-Request-ID": {
+                "description": "Request correlation UUID.",
+                "schema": {
+                  "format": "uuid",
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PlayerSeasonSummaryDto"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A path or query value is invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The requested resource does not exist.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The public request limit was exceeded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected internal failure occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The database is unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get a player season metric summary",
+        "tags": [
+          "Analytics"
+        ]
+      }
+    },
     "/analytics/players/{id}/trends": {
       "get": {
         "operationId": "listPlayerTrends",
@@ -2688,184 +2814,6 @@
   ],
   "components": {
     "schemas": {
-      "MetricValuesDto": {
-        "type": "object",
-        "properties": {
-          "pointsPerGame": {
-            "type": "number",
-            "nullable": true
-          },
-          "goalsPerGame": {
-            "type": "number",
-            "nullable": true
-          },
-          "assistsPerGame": {
-            "type": "number",
-            "nullable": true
-          },
-          "shootingPercentage": {
-            "type": "number",
-            "nullable": true
-          },
-          "consistencyScore": {
-            "type": "number",
-            "nullable": true
-          }
-        },
-        "required": [
-          "pointsPerGame",
-          "goalsPerGame",
-          "assistsPerGame",
-          "shootingPercentage",
-          "consistencyScore"
-        ]
-      },
-      "PlayerTrendPointDto": {
-        "type": "object",
-        "properties": {
-          "asOfGameId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "asOfDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "window": {
-            "type": "number",
-            "enum": [
-              5,
-              10,
-              20
-            ]
-          },
-          "sampleSize": {
-            "type": "number"
-          },
-          "metrics": {
-            "$ref": "#/components/schemas/MetricValuesDto"
-          },
-          "formulaVersion": {
-            "type": "string"
-          },
-          "computedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "asOfGameId",
-          "asOfDate",
-          "window",
-          "sampleSize",
-          "metrics",
-          "formulaVersion",
-          "computedAt"
-        ]
-      },
-      "ApiErrorDetailDto": {
-        "type": "object",
-        "properties": {
-          "field": {
-            "type": "string",
-            "example": "page"
-          },
-          "code": {
-            "type": "string",
-            "example": "MIN_VALUE"
-          },
-          "message": {
-            "type": "string",
-            "example": "page must be at least 1"
-          }
-        },
-        "required": [
-          "field",
-          "code",
-          "message"
-        ]
-      },
-      "ApiErrorBodyDto": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "example": "VALIDATION_ERROR"
-          },
-          "message": {
-            "type": "string",
-            "example": "The request contains invalid values."
-          },
-          "details": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ApiErrorDetailDto"
-            }
-          },
-          "requestId": {
-            "type": "string",
-            "example": "0d9de4ac-57b8-4cb4-8895-33bcb4eb3396",
-            "format": "uuid"
-          },
-          "timestamp": {
-            "type": "string",
-            "example": "2026-07-22T20:00:00.000Z",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "code",
-          "message",
-          "details",
-          "requestId",
-          "timestamp"
-        ]
-      },
-      "ApiErrorResponseDto": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "$ref": "#/components/schemas/ApiErrorBodyDto"
-          }
-        },
-        "required": [
-          "error"
-        ]
-      },
-      "SeasonSummaryDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "leagueId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "label": {
-            "type": "string",
-            "example": "2025-2026"
-          },
-          "startDate": {
-            "type": "string",
-            "example": "2025-10-07",
-            "format": "date"
-          },
-          "endDate": {
-            "type": "string",
-            "example": "2026-06-30",
-            "format": "date"
-          }
-        },
-        "required": [
-          "id",
-          "leagueId",
-          "label",
-          "startDate",
-          "endDate"
-        ]
-      },
       "TeamSummaryDto": {
         "type": "object",
         "properties": {
@@ -2943,6 +2891,217 @@
           "position",
           "active",
           "currentTeam"
+        ]
+      },
+      "SeasonSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "leagueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string",
+            "example": "2025-2026"
+          },
+          "startDate": {
+            "type": "string",
+            "example": "2025-10-07",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "example": "2026-06-30",
+            "format": "date"
+          }
+        },
+        "required": [
+          "id",
+          "leagueId",
+          "label",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "MetricValuesDto": {
+        "type": "object",
+        "properties": {
+          "pointsPerGame": {
+            "type": "number",
+            "nullable": true
+          },
+          "goalsPerGame": {
+            "type": "number",
+            "nullable": true
+          },
+          "assistsPerGame": {
+            "type": "number",
+            "nullable": true
+          },
+          "shootingPercentage": {
+            "type": "number",
+            "nullable": true
+          },
+          "consistencyScore": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "pointsPerGame",
+          "goalsPerGame",
+          "assistsPerGame",
+          "shootingPercentage",
+          "consistencyScore"
+        ]
+      },
+      "PlayerSeasonSummaryDto": {
+        "type": "object",
+        "properties": {
+          "player": {
+            "$ref": "#/components/schemas/PlayerSummaryDto"
+          },
+          "season": {
+            "$ref": "#/components/schemas/SeasonSummaryDto"
+          },
+          "sampleSize": {
+            "type": "number"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricValuesDto"
+          },
+          "dataCutoff": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "formulaVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "player",
+          "season",
+          "sampleSize",
+          "metrics",
+          "dataCutoff",
+          "formulaVersion"
+        ]
+      },
+      "ApiErrorDetailDto": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "example": "page"
+          },
+          "code": {
+            "type": "string",
+            "example": "MIN_VALUE"
+          },
+          "message": {
+            "type": "string",
+            "example": "page must be at least 1"
+          }
+        },
+        "required": [
+          "field",
+          "code",
+          "message"
+        ]
+      },
+      "ApiErrorBodyDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "VALIDATION_ERROR"
+          },
+          "message": {
+            "type": "string",
+            "example": "The request contains invalid values."
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiErrorDetailDto"
+            }
+          },
+          "requestId": {
+            "type": "string",
+            "example": "0d9de4ac-57b8-4cb4-8895-33bcb4eb3396",
+            "format": "uuid"
+          },
+          "timestamp": {
+            "type": "string",
+            "example": "2026-07-22T20:00:00.000Z",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "details",
+          "requestId",
+          "timestamp"
+        ]
+      },
+      "ApiErrorResponseDto": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiErrorBodyDto"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PlayerTrendPointDto": {
+        "type": "object",
+        "properties": {
+          "asOfGameId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "asOfDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "window": {
+            "type": "number",
+            "enum": [
+              5,
+              10,
+              20
+            ]
+          },
+          "sampleSize": {
+            "type": "number"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/MetricValuesDto"
+          },
+          "formulaVersion": {
+            "type": "string"
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "asOfGameId",
+          "asOfDate",
+          "window",
+          "sampleSize",
+          "metrics",
+          "formulaVersion",
+          "computedAt"
         ]
       },
       "PlayerComparisonItemDto": {

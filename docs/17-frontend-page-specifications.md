@@ -60,11 +60,10 @@ clear empty state and retain navigation.
 
 Missing player renders the resource-not-found view, not a generic failure.
 
-Pass 11 renders the API-owned 5/10/20 rolling metric summaries and their sample
-sizes. The ECharts trend visualization and a dedicated API-owned single-player
-season aggregate are delivered with the analytics presentation work in Pass
-12. The browser must not derive a season aggregate from paginated game rows or
-duplicate metric formulas.
+Pass 12 adds the API-owned season aggregate and an ECharts last-10 trend with an
+equivalent semantic table. The existing 5/10/20 metric tiles remain available.
+The browser does not derive aggregates from paginated game rows or duplicate
+metric formulas.
 
 ## Team Explorer (`/teams`)
 
@@ -104,6 +103,11 @@ Two tabs whose state is URL-addressable:
   table, and selected-team trend.
 
 Every metric links to or reveals its definition, sample size, and data cutoff.
+
+Pass 12 implements both views. Player IDs, season, window, active tab, and
+selected trend team round-trip through query parameters. ECharts is loaded only
+when a chart-bearing lazy feature is opened, and every chart is accompanied by
+the same values in a semantic table.
 
 ## Standard States
 

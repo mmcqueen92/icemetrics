@@ -48,7 +48,10 @@ Passes 11 and 12; do not create unused wrappers in advance.
 Pass 11 implements page headers, responsive surfaces/cards, filter bars,
 season/date selectors, sortable and paginated tables, status badges, and metric
 tiles. Tables retain semantic headers and horizontally scroll on compact
-screens. Chart frames and dialogs still wait for their Pass 12 consumers.
+screens. Pass 12 adds the chart primitive with ECharts as a progressive visual
+enhancement: the canvas is hidden from assistive technology and the complete
+dataset remains available in an adjacent captioned table. Dialogs remain
+deferred until a feature requires one.
 
 ## Color and Status
 

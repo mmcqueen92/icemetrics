@@ -21,6 +21,8 @@ import { ApiErrorResponseDto } from '../model/apiErrorResponseDto';
 // @ts-ignore
 import { ComparePlayers200Response } from '../model/comparePlayers200Response';
 // @ts-ignore
+import { GetPlayerSeasonSummary200Response } from '../model/getPlayerSeasonSummary200Response';
+// @ts-ignore
 import { ListPlayerTrends200Response } from '../model/listPlayerTrends200Response';
 // @ts-ignore
 import { ListTeamRankings200Response } from '../model/listTeamRankings200Response';
@@ -121,6 +123,78 @@ export class AnalyticsService extends BaseService {
         let localVarPath = `/analytics/player-comparisons`;
         const { basePath, withCredentials } = this.configuration;
         return this.httpClient.request<ComparePlayers200Response>('get', `${basePath}${localVarPath}`,
+            {
+                context: localVarHttpContext,
+                params: localVarQueryParameters.toHttpParams(),
+                responseType: <any>responseType_,
+                ...(withCredentials ? { withCredentials } : {}),
+                headers: localVarHeaders,
+                observe: observe,
+                ...(localVarTransferCache !== undefined ? { transferCache: localVarTransferCache } : {}),
+                reportProgress: reportProgress
+            }
+        );
+    }
+
+    /**
+     * Get a player season metric summary
+     * @endpoint get /analytics/players/{id}/summary
+     * @param id 
+     * @param seasonId 
+     * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
+     * @param reportProgress flag to report request and response progress.
+     * @param options additional options
+     */
+    public getPlayerSeasonSummary(id: string, seasonId: string, observe?: 'body', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<GetPlayerSeasonSummary200Response>;
+    public getPlayerSeasonSummary(id: string, seasonId: string, observe?: 'response', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpResponse<GetPlayerSeasonSummary200Response>>;
+    public getPlayerSeasonSummary(id: string, seasonId: string, observe?: 'events', reportProgress?: boolean, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<HttpEvent<GetPlayerSeasonSummary200Response>>;
+    public getPlayerSeasonSummary(id: string, seasonId: string, observe: any = 'body', reportProgress: boolean = false, options?: {httpHeaderAccept?: 'application/json', context?: HttpContext, transferCache?: boolean}): Observable<any> {
+        if (id === null || id === undefined) {
+            throw new Error('Required parameter id was null or undefined when calling getPlayerSeasonSummary.');
+        }
+        if (seasonId === null || seasonId === undefined) {
+            throw new Error('Required parameter seasonId was null or undefined when calling getPlayerSeasonSummary.');
+        }
+
+        let localVarQueryParameters = new OpenApiHttpParams(this.encoder);
+
+        localVarQueryParameters = this.addToHttpParams(
+            localVarQueryParameters,
+            'seasonId',
+            <any>seasonId,
+            QueryParamStyle.Form,
+            true,
+        );
+
+
+        let localVarHeaders = this.defaultHeaders;
+
+        const localVarHttpHeaderAcceptSelected: string | undefined = options?.httpHeaderAccept ?? this.configuration.selectHeaderAccept([
+            'application/json'
+        ]);
+        if (localVarHttpHeaderAcceptSelected !== undefined) {
+            localVarHeaders = localVarHeaders.set('Accept', localVarHttpHeaderAcceptSelected);
+        }
+
+        const localVarHttpContext: HttpContext = options?.context ?? new HttpContext();
+
+        const localVarTransferCache: boolean = options?.transferCache ?? true;
+
+
+        let responseType_: 'text' | 'json' | 'blob' = 'json';
+        if (localVarHttpHeaderAcceptSelected) {
+            if (localVarHttpHeaderAcceptSelected.startsWith('text')) {
+                responseType_ = 'text';
+            } else if (this.configuration.isJsonMime(localVarHttpHeaderAcceptSelected)) {
+                responseType_ = 'json';
+            } else {
+                responseType_ = 'blob';
+            }
+        }
+
+        let localVarPath = `/analytics/players/${this.configuration.encodeParam({name: "id", value: id, in: "path", style: "simple", explode: false, dataType: "string", dataFormat: "uuid"})}/summary`;
+        const { basePath, withCredentials } = this.configuration;
+        return this.httpClient.request<GetPlayerSeasonSummary200Response>('get', `${basePath}${localVarPath}`,
             {
                 context: localVarHttpContext,
                 params: localVarQueryParameters.toHttpParams(),

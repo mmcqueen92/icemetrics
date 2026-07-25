@@ -22,6 +22,7 @@
     "model/gameTeamDto.ts",
     "model/getGame200Response.ts",
     "model/getPlayer200Response.ts",
+    "model/getPlayerSeasonSummary200Response.ts",
     "model/getSeason200Response.ts",
     "model/getTeam200Response.ts",
     "model/leagueSummaryDto.ts",
@@ -46,6 +47,7 @@
     "model/playerComparisonItemDto.ts",
     "model/playerDetailDto.ts",
     "model/playerGameStatDto.ts",
+    "model/playerSeasonSummaryDto.ts",
     "model/playerSummaryDto.ts",
     "model/playerTrendPointDto.ts",
     "model/rosterPlayerDto.ts",
@@ -62,5 +64,5 @@
     "variables.ts"
   ],
   "generator": "openapitools/openapi-generator-cli:v7.22.0@sha256:1f459499a7c794aa0ea769c3c9b0eb54806c5ad2f68510a0ebb9338d0a626ced",
-  "specSha256": "169c21fec201acda9845e37351f9ea291a0fad21f4e082bee72c273bfe5e9f08"
+  "specSha256": "7fbe25ef2918604fd39f8ff3b79340594f3dbb4949d6a70258a94b2f2805835e"
 }

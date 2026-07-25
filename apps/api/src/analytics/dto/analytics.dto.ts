@@ -36,6 +36,12 @@ export class PlayerTrendQueryDto {
   window = 10;
 }
 
+export class PlayerSeasonSummaryQueryDto {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID('4')
+  seasonId!: string;
+}
+
 export class PlayerComparisonQueryDto {
   @ApiProperty({
     description: 'Two to five distinct comma-separated player UUIDs.',
@@ -123,6 +129,21 @@ export class PlayerComparisonItemDto {
   sampleSize!: number;
   @ApiProperty({ type: MetricValuesDto })
   metrics!: MetricValuesDto;
+}
+
+export class PlayerSeasonSummaryDto {
+  @ApiProperty({ type: PlayerSummaryDto })
+  player!: PlayerSummaryDto;
+  @ApiProperty({ type: SeasonSummaryDto })
+  season!: SeasonSummaryDto;
+  @ApiProperty()
+  sampleSize!: number;
+  @ApiProperty({ type: MetricValuesDto })
+  metrics!: MetricValuesDto;
+  @ApiProperty({ format: 'date-time', nullable: true, type: String })
+  dataCutoff!: string | null;
+  @ApiProperty()
+  formulaVersion!: string;
 }
 
 export class PlayerComparisonDto {

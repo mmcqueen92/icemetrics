@@ -58,6 +58,12 @@ After Pass 11, dashboard, player, team, and game explorers remain separate lazy
 chunks. The production initial bundle is 364.81 KB raw with a 92.21 KB estimated
 transfer size, still below the configured warning threshold.
 
+Pass 12 keeps the analytics page and ECharts in separate lazy chunks. ECharts
+must not appear in an initial chunk; production build output is the regression
+check. The Pass 12 production baseline is 365.02 KB raw with a 92.18 KB
+estimated transfer size. ECharts is emitted as a separate 1.15 MB raw,
+312.55 KB estimated-transfer lazy chunk.
+
 ## Scaling Triggers
 
 Consider additional infrastructure only when a recorded load test or production

@@ -128,6 +128,26 @@ function repository(overrides: Record<string, unknown> = {}) {
 }
 
 describe('AnalyticsService', () => {
+  it('returns an authoritative single-player season summary', async () => {
+    const service = new AnalyticsService(repository() as never);
+
+    await expect(
+      service.playerSeasonSummary(player.id, { seasonId: 'season-a' }),
+    ).resolves.toMatchObject({
+      dataCutoff: '2025-10-01T02:00:00.000Z',
+      metrics: {
+        assistsPerGame: 1,
+        consistencyScore: null,
+        goalsPerGame: 1,
+        pointsPerGame: 2,
+        shootingPercentage: 50,
+      },
+      player: { id: player.id },
+      sampleSize: 1,
+      season: { id: 'season-a' },
+    });
+  });
+
   it('maps player and team trend snapshots', async () => {
     const service = new AnalyticsService(repository() as never);
 
@@ -222,6 +242,9 @@ describe('AnalyticsService', () => {
       service.playerTrends('missing', { seasonId: 'season-a', window: 10 }),
     ).rejects.toBeInstanceOf(ResourceNotFoundError);
     await expect(
+      service.playerSeasonSummary('missing', { seasonId: 'season-a' }),
+    ).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await expect(
       service.comparePlayers({
         playerIds: ['missing'],
         seasonId: 'season-a',
@@ -238,6 +261,9 @@ describe('AnalyticsService', () => {
         seasonId: 'missing',
         window: ComparisonWindow.Season,
       }),
+    ).rejects.toBeInstanceOf(ResourceNotFoundError);
+    await expect(
+      missingSeason.playerSeasonSummary(player.id, { seasonId: 'missing' }),
     ).rejects.toBeInstanceOf(ResourceNotFoundError);
 
     const missingTeam = new AnalyticsService(

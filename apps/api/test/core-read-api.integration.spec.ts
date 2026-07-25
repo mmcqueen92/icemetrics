@@ -474,6 +474,27 @@ describe('core read API', () => {
   it('compares season and rolling player metrics and validates distinct players', async () => {
     await request(app.getHttpServer())
       .get(
+        `/api/v1/analytics/players/${MERCER_ID}/summary?seasonId=${SEASON_ID}`,
+      )
+      .expect(200)
+      .expect((response) => {
+        expect(response.body.data).toMatchObject({
+          formulaVersion: '1',
+          metrics: {
+            assistsPerGame: 0,
+            consistencyScore: null,
+            goalsPerGame: 4,
+            pointsPerGame: 4,
+            shootingPercentage: 50,
+          },
+          player: { id: MERCER_ID },
+          sampleSize: 1,
+          season: { id: SEASON_ID },
+        });
+      });
+
+    await request(app.getHttpServer())
+      .get(
         `/api/v1/analytics/player-comparisons?seasonId=${SEASON_ID}&playerIds=${MERCER_ID},${GOALTENDER_ID}`,
       )
       .expect(200)

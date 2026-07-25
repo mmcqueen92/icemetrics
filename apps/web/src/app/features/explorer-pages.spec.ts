@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { ExplorerApiService } from '../core/api/explorer-api.service';
+import { AnalyticsPageComponent } from './analytics/analytics-page';
 import { GameDetailPageComponent } from './games/game-detail-page';
 import { GameListPageComponent } from './games/game-list-page';
 import { PlayerDetailPageComponent } from './players/player-detail-page';
@@ -63,6 +64,40 @@ const meta = {
 
 function apiFixture() {
   return {
+    comparePlayers: vi.fn(() =>
+      of({
+        data: {
+          dataCutoff: game.startsAt,
+          formulaVersion: '1',
+          players: [
+            {
+              metrics: {
+                assistsPerGame: 1,
+                consistencyScore: null,
+                goalsPerGame: 2,
+                pointsPerGame: 3,
+                shootingPercentage: 25,
+              },
+              player,
+              sampleSize: 1,
+            },
+            {
+              metrics: {
+                assistsPerGame: 0,
+                consistencyScore: null,
+                goalsPerGame: 1,
+                pointsPerGame: 1,
+                shootingPercentage: 10,
+              },
+              player: { ...player, id: 'player-2', lastName: 'Riley' },
+              sampleSize: 1,
+            },
+          ],
+          season,
+          window: 'season' as const,
+        },
+      }),
+    ),
     getGame: vi.fn(() =>
       of({
         data: {
@@ -89,6 +124,24 @@ function apiFixture() {
           ...player,
           birthDate: '1998-03-11',
           shootsCatches: 'L' as const,
+        },
+      }),
+    ),
+    getPlayerSeasonSummary: vi.fn(() =>
+      of({
+        data: {
+          dataCutoff: game.startsAt,
+          formulaVersion: '1',
+          metrics: {
+            assistsPerGame: 1,
+            consistencyScore: null,
+            goalsPerGame: 2,
+            pointsPerGame: 3,
+            shootingPercentage: 25,
+          },
+          player,
+          sampleSize: 1,
+          season,
         },
       }),
     ),
@@ -306,6 +359,37 @@ describe('explorer pages', () => {
     expect(detail.textContent).toContain('Rolling performance');
     expect(detail.textContent).toContain('3.00 P/GP');
     expect(detail.textContent).toContain('Game log');
+  });
+
+  it('renders player comparisons and team rankings from URL state', async () => {
+    const api = apiFixture();
+    const comparison = await render(
+      AnalyticsPageComponent,
+      api,
+      {},
+      {
+        playerIds: 'player-1,player-2',
+        season: season.id,
+        tab: 'players',
+      },
+    );
+    expect(comparison.textContent).toContain('Player metric comparison');
+    expect(comparison.textContent).toContain('Equivalent player metric data');
+    expect(api.comparePlayers).toHaveBeenCalledWith(
+      ['player-1', 'player-2'],
+      season.id,
+      'season',
+    );
+
+    TestBed.resetTestingModule();
+    const rankings = await render(
+      AnalyticsPageComponent,
+      api,
+      {},
+      { season: season.id, tab: 'rankings', team: team.id },
+    );
+    expect(rankings.textContent).toContain('Team power rankings');
+    expect(rankings.textContent).toContain('Selected team trend');
   });
 
   it('renders standings and the team roster/performance detail', async () => {

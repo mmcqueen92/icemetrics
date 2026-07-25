@@ -57,6 +57,15 @@ UTC timestamps, and the exact envelopes below.
 }
 ```
 
+## Player Season Summary
+
+`GET /api/v1/analytics/players/7d780a0a-5f39-4d29-9f6a-b28ed6ab2fb5/summary?seasonId=ab510dc6-6c81-4457-beba-3876ef4e6492`
+
+The response uses the standard single-resource envelope. Its `data` object
+contains `player`, `season`, `sampleSize`, `metrics`, `dataCutoff`, and
+`formulaVersion`. Metric fields are present and use `null` when a denominator
+or minimum sample is unavailable.
+
 ## Validation Error
 
 `GET /api/v1/players?page=0`

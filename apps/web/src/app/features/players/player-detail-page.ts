@@ -7,10 +7,12 @@ import { BehaviorSubject, combineLatest, forkJoin, map, switchMap } from 'rxjs';
 import type {
   PlayerDetailDto,
   PlayerGameStatDto,
+  PlayerSeasonSummaryDto,
   PlayerTrendPointDto,
   SeasonSummaryDto,
 } from '../../core/api/generated/model/models';
 import { ExplorerApiService } from '../../core/api/explorer-api.service';
+import { AccessibleLineChartComponent } from '../../shared/components/accessible-line-chart/accessible-line-chart';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state';
 import { LoadingStateComponent } from '../../shared/components/loading-state/loading-state';
@@ -32,12 +34,15 @@ interface PlayerDetailData {
   player: PlayerDetailDto;
   seasons: SeasonSummaryDto[];
   selectedSeasonId: string;
+  summary: PlayerSeasonSummaryDto;
   trends: Record<5 | 10 | 20, PlayerTrendPointDto | undefined>;
+  trendPoints: PlayerTrendPointDto[];
 }
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AccessibleLineChartComponent,
     DatePipe,
     EmptyStateComponent,
     ErrorStateComponent,
@@ -129,6 +134,28 @@ interface PlayerDetailData {
                 </label>
               </div>
               <div class="metric-grid">
+                <article class="metric-tile">
+                  <span>Season</span>
+                  <strong
+                    >{{
+                      formatRate(detail.summary.metrics.pointsPerGame)
+                    }}
+                    P/GP</strong
+                  >
+                  <p>
+                    {{ formatRate(detail.summary.metrics.goalsPerGame) }} G/GP ·
+                    {{
+                      formatPercentage(
+                        detail.summary.metrics.shootingPercentage
+                      )
+                    }}
+                    shooting
+                  </p>
+                  <p class="muted">
+                    {{ detail.summary.sampleSize }} game sample · formula
+                    {{ detail.summary.formulaVersion }}
+                  </p>
+                </article>
                 @for (window of windows; track window) {
                   <article class="metric-tile">
                     <span>Last {{ window }} games</span>
@@ -155,6 +182,49 @@ interface PlayerDetailData {
                   </article>
                 }
               </div>
+              @if (detail.trendPoints.length) {
+                <app-accessible-line-chart
+                  title="Last-10 points per game"
+                  [categories]="trendDates(detail.trendPoints)"
+                  [series]="trendSeries(detail.trendPoints)"
+                />
+                <div class="table-scroll">
+                  <table class="data-table">
+                    <caption>
+                      Equivalent last-10 rolling trend data
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th class="numeric">P/GP</th>
+                        <th class="numeric">G/GP</th>
+                        <th class="numeric">A/GP</th>
+                        <th class="numeric">Sample</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (
+                        trend of detail.trendPoints;
+                        track trend.asOfGameId
+                      ) {
+                        <tr>
+                          <td>{{ trend.asOfDate | date: 'mediumDate' }}</td>
+                          <td class="numeric">
+                            {{ formatRate(trend.metrics.pointsPerGame) }}
+                          </td>
+                          <td class="numeric">
+                            {{ formatRate(trend.metrics.goalsPerGame) }}
+                          </td>
+                          <td class="numeric">
+                            {{ formatRate(trend.metrics.assistsPerGame) }}
+                          </td>
+                          <td class="numeric">{{ trend.sampleSize }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
             </section>
 
             <section class="surface" aria-labelledby="game-log-heading">
@@ -253,6 +323,7 @@ export class PlayerDetailPageComponent {
               return forkJoin({
                 gameLog: this.api.listPlayerStats(id, selectedSeasonId, page),
                 player: this.api.getPlayer(id),
+                summary: this.api.getPlayerSeasonSummary(id, selectedSeasonId),
                 trend10: this.api.listPlayerTrends(id, selectedSeasonId, 10),
                 trend20: this.api.listPlayerTrends(id, selectedSeasonId, 20),
                 trend5: this.api.listPlayerTrends(id, selectedSeasonId, 5),
@@ -266,11 +337,13 @@ export class PlayerDetailPageComponent {
                       player: result.player.data,
                       seasons,
                       selectedSeasonId,
+                      summary: result.summary.data,
                       trends: {
                         5: result.trend5.data.at(-1),
                         10: result.trend10.data.at(-1),
                         20: result.trend20.data.at(-1),
                       },
+                      trendPoints: result.trend10.data,
                     }) satisfies PlayerDetailData,
                 ),
               );
@@ -304,6 +377,19 @@ export class PlayerDetailPageComponent {
 
   protected retry(): void {
     this.refresh.next(this.refresh.value + 1);
+  }
+
+  protected trendDates(points: PlayerTrendPointDto[]): string[] {
+    return points.map((point) => point.asOfDate);
+  }
+
+  protected trendSeries(points: PlayerTrendPointDto[]) {
+    return [
+      {
+        name: 'Points per game',
+        values: points.map((point) => point.metrics.pointsPerGame),
+      },
+    ];
   }
 }
 

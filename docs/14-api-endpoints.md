@@ -119,6 +119,15 @@ Default: `points desc`.
 
 ## Analytics
 
+### `GET /analytics/players/:id/summary`
+
+Required: `seasonId`.
+
+Returns the API-owned season aggregate for one player, including the player and
+season summaries, sample size, data cutoff, formula version, and named metric
+values. This endpoint is the player-profile source; clients must not calculate
+the aggregate from paginated game logs.
+
 ### `GET /analytics/players/:id/trends`
 
 Required: `seasonId`.

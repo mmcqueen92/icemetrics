@@ -124,6 +124,18 @@ export class ExplorerApiService {
     return this.analytics.listPlayerTrends(id, seasonId, window);
   }
 
+  getPlayerSeasonSummary(id: string, seasonId: string) {
+    return this.analytics.getPlayerSeasonSummary(id, seasonId);
+  }
+
+  comparePlayers(
+    playerIds: string[],
+    seasonId: string,
+    window: 'season' | '5' | '10' | '20',
+  ) {
+    return this.analytics.comparePlayers(playerIds, seasonId, window);
+  }
+
   listGames(query: GameQuery) {
     return this.games.listGames(
       query.page,

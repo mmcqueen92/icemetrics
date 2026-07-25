@@ -65,3 +65,23 @@ test('keeps game status in URL state and opens the reconciled box score', async 
   ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Alex Mercer' })).toBeVisible();
 });
+
+test('opens URL-addressable analytics with an accessible data equivalent', async ({
+  page,
+}) => {
+  await page.goto(
+    '/analytics?tab=players&season=season-1&playerIds=player-1%2Cplayer-2',
+  );
+
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Player metric comparison' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('table', { name: 'Equivalent player metric data' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Team rankings' }).click();
+  await expect(page).toHaveURL(/tab=rankings/);
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'Team power rankings' }),
+  ).toBeVisible();
+});

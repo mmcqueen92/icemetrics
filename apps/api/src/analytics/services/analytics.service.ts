@@ -19,6 +19,8 @@ import {
   type MetricValuesDto,
   type PlayerComparisonDto,
   type PlayerComparisonQueryDto,
+  type PlayerSeasonSummaryDto,
+  type PlayerSeasonSummaryQueryDto,
   type PlayerTrendPointDto,
   type PlayerTrendQueryDto,
   type TeamRankingDto,
@@ -44,6 +46,35 @@ export class AnalyticsService {
     @Inject(AnalyticsRepository)
     private readonly repository: AnalyticsRepository,
   ) {}
+
+  async playerSeasonSummary(
+    playerId: string,
+    query: PlayerSeasonSummaryQueryDto,
+  ): Promise<PlayerSeasonSummaryDto> {
+    const [season, player] = await Promise.all([
+      this.repository.findSeason(query.seasonId),
+      this.repository.findPlayer(playerId),
+    ]);
+    if (season === null) {
+      throw new ResourceNotFoundError('Season');
+    }
+    if (player === null) {
+      throw new ResourceNotFoundError('Player');
+    }
+    const rows = await this.repository.findPlayerSeasonStats(
+      [playerId],
+      query.seasonId,
+    );
+    const metrics = calculatePlayerMetrics(rows);
+    return {
+      dataCutoff: rows.at(-1)?.game.startsAt.toISOString() ?? null,
+      formulaVersion: ANALYTICS_FORMULA_VERSION,
+      metrics: toMetricDto({ ...metrics, consistencyScore: null }),
+      player,
+      sampleSize: rows.length,
+      season: mapSeason(season),
+    };
+  }
 
   async playerTrends(
     playerId: string,

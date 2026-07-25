@@ -64,7 +64,10 @@ runs the Chromium suite. The Pass 10 baseline covers keyboard navigation,
 client-side lazy routing, the in-app not-found path, and the 320 CSS pixel
 layout. Pass 11 adds deterministic intercepted API fixtures for player
 search/detail, dated standings/team detail, and game/box-score flows. Browser
-tests never call a live NHL provider.
+tests never call a live NHL provider. Pass 12 adds URL-addressable player
+comparison and team-ranking coverage, asserts the semantic table alternative,
+and exercises the API-owned player season summary in the PostgreSQL integration
+suite.
 
 Each integration test file creates its own PostgreSQL 17 Testcontainers instance
 with a unique database name and credentials; suites never use the local Compose
