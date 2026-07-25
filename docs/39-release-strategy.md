@@ -110,3 +110,24 @@ After deployment verify:
 
 A production restore is considered incomplete until API, analytics, and job
 freshness checks pass.
+
+## Pass 13 Implementation
+
+`render.yaml` defines isolated staging and protected production environments
+under one Render project. Service auto-deploy is disabled; the deployment
+workflow uses secret deploy hooks with an explicit `ref` SHA. Successful CI on
+`main` deploys staging, while manual production promotion first reruns staging
+smoke checks for the requested SHA and then crosses the protected GitHub
+environment approval.
+
+The API service alone owns `prisma migrate deploy` as its pre-deploy command,
+so migrations run once per environment release. API and cron use the same
+non-root production image. The smoke script verifies immutable API and web
+release metadata plus core player, team/standing, game, and ranking reads.
+Operational setup, evidence requirements, alerts, and recovery procedures live
+under `infra/render`.
+
+Local image and logical-restore rehearsals validate repository mechanics. Paid
+plan selection, Render PITR coverage, alert delivery, Sentry delivery, and
+hosted restore evidence remain mandatory external launch gates because they
+cannot be truthfully proven without provisioned accounts.

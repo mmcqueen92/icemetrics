@@ -219,6 +219,14 @@ Acceptance:
 - rollback, forward-fix, provider-outage, and database-restore procedures are
   documented and rehearsed where safe.
 
+Status: implementation complete; hosted launch gates remain. The Render
+Blueprint, protected exact-SHA promotion workflow, non-root production image,
+single migration owner, smoke/freshness checks, Sentry integration, alert
+matrix, and four recovery runbooks are implemented. The isolated PostgreSQL
+backup/restore rehearsal passes locally. Paid-plan PITR, hosted alerts/Sentry,
+and environment approval evidence must be verified after account provisioning
+as documented in `infra/render/README.md`.
+
 ## Pass 14: Stable MVP Release
 
 Perform full acceptance, documentation reconciliation, performance/security

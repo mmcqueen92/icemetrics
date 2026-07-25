@@ -1,0 +1,107 @@
+name: Deployment
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Full Git SHA already verified in staging
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && 'production' || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-staging:
+    name: Deploy and smoke staging
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    steps:
+      - name: Check out verified release
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Deploy API with one pre-deploy migration
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.API_DEPLOY_HOOK_URL }}
+        run: node scripts/trigger-render-deploy.mjs "${{ github.event.workflow_run.head_sha }}"
+      - name: Deploy web
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.WEB_DEPLOY_HOOK_URL }}
+        run: node scripts/trigger-render-deploy.mjs "${{ github.event.workflow_run.head_sha }}"
+      - name: Deploy scheduled jobs
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.JOBS_DEPLOY_HOOK_URL }}
+        run: node scripts/trigger-render-deploy.mjs "${{ github.event.workflow_run.head_sha }}"
+      - name: Run staging smoke checks
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          EXPECTED_RELEASE: ${{ github.event.workflow_run.head_sha }}
+          WEB_BASE_URL: ${{ vars.WEB_BASE_URL }}
+        run: node scripts/smoke-deployment.mjs
+
+  verify-staging-release:
+    name: Verify staging release for promotion
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    steps:
+      - name: Check out requested release
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.release }}
+          persist-credentials: false
+      - name: Re-run staging smoke checks
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          EXPECTED_RELEASE: ${{ inputs.release }}
+          WEB_BASE_URL: ${{ vars.WEB_BASE_URL }}
+        run: node scripts/smoke-deployment.mjs
+
+  deploy-production:
+    name: Promote exact release to production
+    if: github.event_name == 'workflow_dispatch'
+    needs: verify-staging-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Check out staging-verified release
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.release }}
+          persist-credentials: false
+      - name: Deploy API with one pre-deploy migration
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.API_DEPLOY_HOOK_URL }}
+        run: node scripts/trigger-render-deploy.mjs "${{ inputs.release }}"
+      - name: Deploy web
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.WEB_DEPLOY_HOOK_URL }}
+        run: node scripts/trigger-render-deploy.mjs "${{ inputs.release }}"
+      - name: Deploy scheduled jobs
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.JOBS_DEPLOY_HOOK_URL }}
+        run: node scripts/trigger-render-deploy.mjs "${{ inputs.release }}"
+      - name: Run production smoke checks
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          EXPECTED_RELEASE: ${{ inputs.release }}
+          WEB_BASE_URL: ${{ vars.WEB_BASE_URL }}
+        run: node scripts/smoke-deployment.mjs

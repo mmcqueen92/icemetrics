@@ -38,6 +38,13 @@ Angular compile-time configuration contains:
 Browser configuration must never contain a secret. Production and staging
 values are supplied by their respective build/deployment environment.
 
+Render static builds run `build:deploy`. The build requires `APP_ENV`,
+`PUBLIC_API_BASE_URL`, and Render's immutable `RENDER_GIT_COMMIT`; optional
+`PUBLIC_SENTRY_DSN` is a public DSN. A generated TypeScript environment file is
+ignored and exists only during the ephemeral build. The root application
+exposes environment/release metadata as non-sensitive host attributes so smoke
+tests can verify the deployed web artifact.
+
 ## Files
 
 - `.env.example`: committed API/local placeholders.
@@ -61,3 +68,7 @@ allow `.env.example`.
   groups, URLs, and Sentry environments.
 - No environment may reference another environment's database.
 - Production secrets are stored only in the protected production environment.
+
+The committed Blueprint uses environment-isolated database references and
+empty database IP allowlists. `SENTRY_DSN`, `PUBLIC_SENTRY_DSN`, and deploy-hook
+URLs are supplied through Render/GitHub environments and are never committed.

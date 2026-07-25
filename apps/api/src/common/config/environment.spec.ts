@@ -46,6 +46,21 @@ describe('validateEnvironment', () => {
     ).toThrow('APP_VERSION is required in production');
   });
 
+  it('uses the immutable Render commit as the production release', () => {
+    expect(
+      validateEnvironment({
+        ...validDevelopmentEnvironment,
+        APP_ENV: 'staging',
+        APP_VERSION: undefined,
+        CORS_ALLOWED_ORIGINS: 'https://icemetrics-staging-web.onrender.com',
+        NODE_ENV: 'production',
+        PUBLIC_API_BASE_URL:
+          'https://icemetrics-staging-api.onrender.com/api/v1',
+        RENDER_GIT_COMMIT: 'abc123',
+      }).APP_VERSION,
+    ).toBe('abc123');
+  });
+
   it('rejects insecure production origins', () => {
     expect(() =>
       validateEnvironment({

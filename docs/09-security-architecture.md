@@ -57,6 +57,12 @@ The MVP requires no `JWT_SECRET` or NHL API key.
 - Production containers run as a non-root user and contain only production
   dependencies and compiled output.
 
+Pass 13's multi-stage `Dockerfile.api` pins Node 24.18.0, installs the OpenSSL
+runtime required by Prisma, prunes development dependencies, and runs as UID
+10001. The same image supplies API, migrations, and one-shot cron commands.
+Static-site security headers and the SPA rewrite are declared in `render.yaml`;
+deployment invariants are checked by `npm run deployment:check`.
+
 ## Database
 
 - API and cron services use separate least-privilege database credentials when

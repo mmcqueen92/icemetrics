@@ -90,7 +90,10 @@ export type Environment = z.infer<typeof environmentSchema>;
 export function validateEnvironment(
   values: Record<string, unknown>,
 ): Environment {
-  const result = environmentSchema.safeParse(values);
+  const result = environmentSchema.safeParse({
+    ...values,
+    APP_VERSION: values['APP_VERSION'] ?? values['RENDER_GIT_COMMIT'],
+  });
 
   if (!result.success) {
     throw new Error(

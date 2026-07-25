@@ -5,6 +5,7 @@ import { DispatcherService } from './dispatcher.service.js';
 import { FrameworkJobService } from './framework-job.service.js';
 import { parseJobArguments } from './job-parameters.js';
 import { ReplayService } from './replay.service.js';
+import { OperationalHealthService } from './operational-health.service.js';
 import type { JobRunResult } from './job.types.js';
 
 @Injectable()
@@ -16,10 +17,17 @@ export class JobCliService {
     private readonly jobs: FrameworkJobService,
     @Inject(ReplayService)
     private readonly replay: ReplayService,
+    @Inject(OperationalHealthService)
+    private readonly operationalHealth: OperationalHealthService,
   ) {}
 
   async execute(argv: readonly string[]): Promise<number> {
     const parsed = parseJobArguments(argv);
+    if (parsed.command === 'health') {
+      const health = await this.operationalHealth.check();
+      process.stdout.write(`${JSON.stringify(health)}\n`);
+      return health.status === 'ok' ? 0 : 1;
+    }
     let result: JobRunResult;
     if (parsed.command === 'dispatch') {
       result = await this.dispatcher.dispatch();

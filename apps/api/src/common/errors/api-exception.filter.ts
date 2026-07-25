@@ -16,6 +16,7 @@ import {
   type ApiErrorDetail,
 } from './api-error.js';
 import { safeLoggedError } from '../logging/safe-logged-error.js';
+import { ErrorTrackingService } from '../observability/error-tracking.service.js';
 
 interface ErrorContract {
   code: ApiErrorCode;
@@ -29,6 +30,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
   constructor(
     @Inject(PinoLogger)
     private readonly logger: PinoLogger,
+    @Inject(ErrorTrackingService)
+    private readonly errorTracking: ErrorTrackingService,
   ) {
     this.logger.setContext(ApiExceptionFilter.name);
   }
@@ -50,6 +53,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
     response.setHeader('X-Request-ID', requestId);
 
     if (contract.code === 'INTERNAL_ERROR') {
+      this.errorTracking.captureException(exception, {
+        requestId,
+        service: 'api',
+      });
       this.logger.error(
         {
           err: safeLoggedError(exception),

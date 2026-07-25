@@ -40,6 +40,13 @@ errors.
 Scrub request headers, query values named like secrets, database URLs, and raw
 provider bodies before sending events.
 
+Pass 13 implements opt-in Sentry reporting for unexpected API exceptions,
+failed job operations, job-runner crashes, and browser global errors. API,
+jobs, and browser events carry `APP_VERSION`/the Render commit and the explicit
+staging or production environment. Default PII collection and tracing are
+disabled; headers, cookies, query strings, database/DSN values, and provider
+payload fields are removed before sending.
+
 ## Operational Signals
 
 The MVP uses:
@@ -82,6 +89,11 @@ Configure alerts for:
 - database unavailability or storage pressure; and
 - Sentry regression on a resolved issue.
 
+The exact post-provisioning alert matrix and runbook routes are maintained in
+`infra/render/alerts.md`. The hourly cron ends with the read-only
+`jobs:health` command so active-season Schedule or Game Statistics staleness
+causes a failed cron event without starting duplicate ingestion work.
+
 Every alert links to a runbook section and must identify staging versus
 production.
 
@@ -95,3 +107,7 @@ Initial measured objectives, reviewed after the first 30 production days:
 - Final-game statistics freshness: within 2 hours of provider final status.
 
 These are operational objectives, not contractual SLAs.
+
+Pass 13 health success responses include `environment`, immutable `release`,
+and `status`; smoke tests use the release field to prove the deployed API is
+the requested Git SHA.

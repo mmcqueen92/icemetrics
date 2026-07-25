@@ -9,6 +9,7 @@ import { HealthModule } from './common/health/health.module.js';
 import { HttpCacheInterceptor } from './common/http/http-cache.interceptor.js';
 import { ResponseEnvelopeInterceptor } from './common/http/response-envelope.interceptor.js';
 import { LoggingModule } from './common/logging/logging.module.js';
+import { ObservabilityModule } from './common/observability/observability.module.js';
 import { ApiThrottlerGuard } from './common/rate-limit/api-throttler.guard.js';
 import { AnalyticsModule } from './analytics/analytics.module.js';
 import { DatabaseModule } from './database/database.module.js';
@@ -28,6 +29,7 @@ import { TeamsModule } from './teams/teams.module.js';
       validate: validateEnvironment,
     }),
     LoggingModule,
+    ObservabilityModule,
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

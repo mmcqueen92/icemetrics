@@ -10,6 +10,7 @@ import { JobCompletionLogger } from './job-completion.logger.js';
 import { JobCoordinatorService } from './job-coordinator.service.js';
 import { JobExecutionService } from './job-execution.service.js';
 import { ReplayService } from './replay.service.js';
+import { OperationalHealthService } from './operational-health.service.js';
 
 @Module({
   exports: [
@@ -18,6 +19,7 @@ import { ReplayService } from './replay.service.js';
     JobCliService,
     JobCoordinatorService,
     JobExecutionService,
+    OperationalHealthService,
     ReplayService,
   ],
   imports: [AnalyticsModule, IngestionModule],
@@ -29,6 +31,7 @@ import { ReplayService } from './replay.service.js';
     JobCompletionLogger,
     JobCoordinatorService,
     JobExecutionService,
+    OperationalHealthService,
     ReplayService,
   ],
 })

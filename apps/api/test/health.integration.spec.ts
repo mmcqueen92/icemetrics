@@ -49,7 +49,11 @@ describe('health endpoints', () => {
     const response = await request(app.getHttpServer())
       .get('/health/live')
       .expect(200)
-      .expect({ status: 'ok' });
+      .expect({
+        environment: 'test',
+        release: 'development',
+        status: 'ok',
+      });
 
     expect(response.headers['x-request-id']).toMatch(/^[0-9a-f-]{36}$/i);
     expect(response.headers['ratelimit-limit']).toBeUndefined();
@@ -76,10 +80,11 @@ describe('health endpoints', () => {
     await probe.end();
     expect(result.rows[0]?.database).toBe(databaseConfiguration.database);
 
-    await request(app.getHttpServer())
-      .get('/health/ready')
-      .expect(200)
-      .expect({ status: 'ok' });
+    await request(app.getHttpServer()).get('/health/ready').expect(200).expect({
+      environment: 'test',
+      release: 'development',
+      status: 'ok',
+    });
   });
 
   it('does not expose health endpoints under the product API prefix', async () => {

@@ -4,6 +4,7 @@ import { JobStatus } from '../generated/prisma/client.js';
 import { AdvisoryLockService } from './advisory-lock.service.js';
 import { JobCompletionLogger } from './job-completion.logger.js';
 import { JobExecutionService } from './job-execution.service.js';
+import { ErrorTrackingService } from '../common/observability/error-tracking.service.js';
 import {
   EMPTY_JOB_COUNTS,
   type JobOutcome,
@@ -20,6 +21,8 @@ export class JobCoordinatorService {
     private readonly locks: AdvisoryLockService,
     @Inject(JobCompletionLogger)
     private readonly logger: JobCompletionLogger,
+    @Inject(ErrorTrackingService)
+    private readonly errorTracking: ErrorTrackingService,
   ) {}
 
   async run(
@@ -50,6 +53,11 @@ export class JobCoordinatorService {
       );
       return result;
     } catch (error) {
+      this.errorTracking.captureException(error, {
+        jobExecutionId: executionId,
+        jobType: request.jobType,
+        service: 'jobs',
+      });
       await this.executions.fail(executionId, error);
       const failed: JobRunResult = {
         counts: { ...EMPTY_JOB_COUNTS, recordsFailed: 1 },

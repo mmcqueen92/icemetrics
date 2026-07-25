@@ -63,11 +63,15 @@ The root `package.json` must provide:
 | `npm run openapi:generate` | Generate OpenAPI and web client |
 | `npm run openapi:check` | Fail on generated contract/client drift |
 | `npm run jobs:dispatch` | Run due logical jobs once |
+| `npm run jobs:health` | Read-only active-season job freshness gate |
 | `npm run jobs:run` | Run one explicitly selected job |
 | `npm run jobs:replay` | Replay a stored raw payload |
 | `npm run docker:up` | Start local dependencies |
 | `npm run docker:down` | Stop local dependencies without deleting volumes |
 | `npm run security:audit` | Report vulnerabilities and fail on critical severity |
+| `npm run deployment:check` | Validate production infrastructure invariants |
+| `npm run smoke:deployment` | Verify a deployed exact release and core reads |
+| `npm run ops:rehearse-restore` | Exercise an isolated backup and restore |
 
 Workspace package names are `@icemetrics/api` and `@icemetrics/web`.
 
@@ -75,6 +79,7 @@ Implemented job-runner examples:
 
 ```text
 npm run jobs:dispatch
+npm run jobs:health
 npm run jobs:run -- --job schedule --date 2026-01-15 --dry-run
 npm run jobs:replay -- --payload-id <uuid>
 ```
@@ -86,6 +91,10 @@ Standings transformations. Schedule and standings commands accept `--date`;
 Schedule additionally accepts a paired date range or `--season-id`, and Game
 Statistics accepts an internal `--game-id`. Analytics remains explicitly
 skipped until Pass 9 rather than reporting false import success.
+
+`ops:rehearse-restore` requires Docker. It creates a uniquely named temporary
+PostgreSQL container, migrates/seeds, backs up and restores into a second
+database, compares fingerprints, and removes only that temporary container.
 
 The OpenAPI commands generate and verify both the API document and the Angular
 client. Client generation runs OpenAPI Generator 7.22.0 from the immutable

@@ -4,6 +4,7 @@ coverage/
 .angular/
 .cache/
 apps/api/src/generated/prisma/
+apps/web/src/environments/generated/
 
 .env
 .env.*

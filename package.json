@@ -21,6 +21,7 @@
     "db:migrate:deploy": "npm run db:migrate:deploy --workspace @icemetrics/api",
     "db:reset": "npm run db:reset --workspace @icemetrics/api",
     "db:seed": "npm run db:seed --workspace @icemetrics/api",
+    "deployment:check": "node scripts/check-deployment-config.mjs",
     "dev": "concurrently --kill-others --names api,web --prefix-colors blue,magenta \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "npm run dev --workspace @icemetrics/api",
     "dev:web": "npm run dev --workspace @icemetrics/web",
@@ -29,22 +30,26 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "jobs:dispatch": "npm run jobs:dispatch --workspace @icemetrics/api --",
+    "jobs:health": "npm run jobs:health --workspace @icemetrics/api --",
     "jobs:replay": "npm run jobs:replay --workspace @icemetrics/api --",
     "jobs:run": "npm run jobs:run --workspace @icemetrics/api --",
     "lint": "npm run lint --workspaces --if-present",
     "openapi:check": "npm run build --workspace @icemetrics/api && node scripts/check-openapi.mjs",
     "openapi:generate": "npm run openapi:generate --workspace @icemetrics/api && node scripts/generate-openapi-client.mjs",
+    "ops:rehearse-restore": "node scripts/rehearse-database-restore.mjs",
     "security:audit": "npm audit --audit-level=critical",
+    "smoke:deployment": "node scripts/smoke-deployment.mjs",
     "test": "npm run test:unit",
     "test:e2e": "npm run test:e2e --workspace @icemetrics/web",
     "test:integration": "npm run test:integration --workspace @icemetrics/api",
     "test:unit": "npm run test:unit --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "verify": "npm run db:generate && npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run openapi:check && npm run build"
+    "verify": "npm run db:generate && npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run openapi:check && npm run deployment:check && npm run build"
   },
   "devDependencies": {
     "concurrently": "10.0.3",
-    "prettier": "3.9.6"
+    "prettier": "3.9.6",
+    "yaml": "2.9.0"
   },
   "allowScripts": {
     "@prisma/engines@7.3.0": true,

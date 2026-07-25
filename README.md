@@ -1,12 +1,10 @@
 # IceMetrics
 
 IceMetrics is a production-style NHL analytics platform built as a TypeScript
-monorepo. The repository currently contains the Pass 8 foundation: a NestJS
-modular-monolith API/job runner, an Angular standalone web application,
-containerized PostgreSQL, a migration-backed Prisma data model, a
-production-style HTTP platform, public hockey read endpoints, generated API
-artifacts, fixture-backed NHL reference imports and ingestion/job framework,
-isolated integration tests, and CI.
+monorepo. Through Pass 13 it contains a NestJS modular-monolith API/job runner,
+an Angular standalone analytics application, PostgreSQL/Prisma data and
+analytics pipelines, generated API artifacts, deterministic test suites, and
+production deployment/operations infrastructure for Render.
 
 The project documentation in [`docs/`](docs/) is the source of truth. Read
 [`AGENTS.md`](AGENTS.md) before making implementation or architecture changes.
@@ -64,35 +62,35 @@ PostgreSQL 17 container for each suite.
 
 ## Root Commands
 
-| Command                     | Purpose                                     |
-| --------------------------- | ------------------------------------------- |
-| `npm run dev`               | Run API and web development servers         |
-| `npm run dev:api`           | Run the NestJS API watcher                  |
-| `npm run dev:web`           | Run the Angular development server          |
-| `npm run build`             | Build all implemented workspaces            |
-| `npm run lint`              | Lint all implemented workspaces             |
-| `npm run typecheck`         | Type-check all implemented workspaces       |
-| `npm run test:unit`         | Run unit and component tests                |
-| `npm run test:integration`  | Run isolated PostgreSQL/API tests           |
-| `npm run db:generate`       | Generate the Prisma client                  |
-| `npm run db:migrate`        | Create/apply a development migration        |
-| `npm run db:migrate:deploy` | Apply committed migrations                  |
-| `npm run db:seed`           | Apply deterministic development fixtures    |
-| `npm run db:reset`          | Confirm and reset a local development DB    |
-| `npm run docker:up`         | Start and wait for local PostgreSQL         |
-| `npm run docker:down`       | Stop PostgreSQL without deleting its data   |
-| `npm run security:audit`    | Fail on critical dependency vulnerabilities |
-| `npm run format`            | Format tracked source/configuration files   |
-| `npm run format:check`      | Verify formatting                           |
-| `npm run jobs:dispatch`     | Dispatch currently due logical jobs         |
-| `npm run jobs:run`          | Run one validated manual logical job        |
-| `npm run jobs:replay`       | Replay one preserved raw payload            |
-| `npm run openapi:generate`  | Regenerate OpenAPI and the Angular client   |
-| `npm run openapi:check`     | Fail when either generated artifact drifts  |
-
-Other commands belonging to later passes remain reserved in `package.json` and
-fail with a message naming the pass that implements them. They must not report
-false success before their infrastructure exists.
+| Command                        | Purpose                                     |
+| ------------------------------ | ------------------------------------------- |
+| `npm run dev`                  | Run API and web development servers         |
+| `npm run dev:api`              | Run the NestJS API watcher                  |
+| `npm run dev:web`              | Run the Angular development server          |
+| `npm run build`                | Build all implemented workspaces            |
+| `npm run lint`                 | Lint all implemented workspaces             |
+| `npm run typecheck`            | Type-check all implemented workspaces       |
+| `npm run test:unit`            | Run unit and component tests                |
+| `npm run test:integration`     | Run isolated PostgreSQL/API tests           |
+| `npm run db:generate`          | Generate the Prisma client                  |
+| `npm run db:migrate`           | Create/apply a development migration        |
+| `npm run db:migrate:deploy`    | Apply committed migrations                  |
+| `npm run db:seed`              | Apply deterministic development fixtures    |
+| `npm run db:reset`             | Confirm and reset a local development DB    |
+| `npm run docker:up`            | Start and wait for local PostgreSQL         |
+| `npm run docker:down`          | Stop PostgreSQL without deleting its data   |
+| `npm run security:audit`       | Fail on critical dependency vulnerabilities |
+| `npm run format`               | Format tracked source/configuration files   |
+| `npm run format:check`         | Verify formatting                           |
+| `npm run jobs:dispatch`        | Dispatch currently due logical jobs         |
+| `npm run jobs:health`          | Check active-season pipeline freshness      |
+| `npm run jobs:run`             | Run one validated manual logical job        |
+| `npm run jobs:replay`          | Replay one preserved raw payload            |
+| `npm run openapi:generate`     | Regenerate OpenAPI and the Angular client   |
+| `npm run openapi:check`        | Fail when either generated artifact drifts  |
+| `npm run deployment:check`     | Validate Render/deployment invariants       |
+| `npm run smoke:deployment`     | Smoke-test an exact hosted release          |
+| `npm run ops:rehearse-restore` | Exercise an isolated database restore       |
 
 ## Repository Layout
 
@@ -101,35 +99,21 @@ apps/
   api/    NestJS API and job-runner entry points
   web/    Angular standalone application
 docs/     Product and engineering source of truth
+infra/    Render operations guidance and incident runbooks
 scripts/  Repository-level automation
+render.yaml       Staging/production Render Blueprint
+Dockerfile.api    Shared non-root API/job production image
 ```
 
 ## Current Scope
 
-Pass 8 includes the complete core read API for leagues, seasons, teams, rosters,
-players and search, games, player and team game statistics, and official
-standings snapshots. Every collection supports documented filtering, sorting,
-bounded pagination, stable ordering, validation, caching, and generated Angular
-client types. PostgreSQL integration tests cover seeded results, empty and
-not-found behavior, derived values, read-path indexes, and representative query
-performance.
+The MVP implementation now includes core NHL explorers, rolling player/team
+analytics, comparison and ranking views, accessible chart alternatives,
+fixture-backed ingestion with correction history, hourly dispatch/freshness
+checks, and isolated staging/production deployment definitions.
 
-The provider and ingestion framework adds exact raw-response checksums,
-runtime-validated NHL adapters, sanitized upstream fixtures, bounded HTTP
-timeouts/retries/concurrency, raw deduplication, import issues, structured job
-records, PostgreSQL advisory locks, abandoned-run reconciliation, validated
-manual commands, hourly dispatch policy, and network-free replay.
-
-Reference jobs now import stable league, season, team, and player identities;
-preserve valid siblings from partitionable invalid collections; remain
-idempotent on repeat runs; and delay inactivation until three complete,
-successful snapshots agree that a record is absent.
-
-Game-data jobs now import schedule status transitions, final player/team
-statistics, corrected box scores, and dated official standings. Provider
-identities deduplicate schedule discovery, immutable raw checksums preserve
-corrections, and job cursors expose correction/freshness state.
-
-It deliberately leaves analytics calculations and endpoints to Pass 9 and
-excludes product UI, authentication, browser end-to-end tests, and deployment
-infrastructure.
+Pass 13 is deployment-ready but not account-provisioned by repository code.
+Before launch, complete the hosted evidence gates in
+[`infra/render/README.md`](infra/render/README.md), including paid PostgreSQL
+PITR, environment protection, alerts, Sentry delivery, staging smoke evidence,
+and a hosted restore exercise.

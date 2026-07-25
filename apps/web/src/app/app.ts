@@ -21,6 +21,7 @@ import { filter } from 'rxjs';
 import { FreshnessIndicatorComponent } from './shared/components/freshness-indicator/freshness-indicator';
 import { GlobalErrorNotificationComponent } from './core/errors/global-error-notification.component';
 import { NavigationProgressService } from './core/routing/navigation-progress.service';
+import { environment } from '../environments/environment';
 
 interface NavigationItem {
   exact: boolean;
@@ -40,10 +41,16 @@ interface NavigationItem {
     RouterOutlet,
   ],
   selector: 'app-root',
+  host: {
+    '[attr.data-environment]': 'environmentName',
+    '[attr.data-release]': 'releaseVersion',
+  },
   styleUrl: './app.scss',
   templateUrl: './app.html',
 })
 export class IceMetricsApp {
+  protected readonly environmentName = environment.environmentName;
+  protected readonly releaseVersion = environment.releaseVersion;
   @ViewChild('mainContent', { read: ElementRef })
   private mainContent?: ElementRef<HTMLElement>;
 

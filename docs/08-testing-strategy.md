@@ -76,6 +76,12 @@ database or share state.
 `main` and release candidates run the complete suite. Tests may be parallelized
 by suite but must not share a database.
 
+Deployment configuration is validated as part of `npm run verify` through
+`npm run deployment:check`. Before a production release, operators also run
+the deployed smoke suite with `npm run smoke:deployment` and periodically
+exercise the isolated database recovery path with
+`npm run ops:rehearse-restore`.
+
 ## Quality Policy
 
 Use coverage reports to identify untested behavior, not as a substitute for

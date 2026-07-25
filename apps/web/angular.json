@@ -44,6 +44,27 @@
               ],
               "outputHashing": "all"
             },
+            "deployment": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kB",
+                  "maximumError": "750kB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
+                }
+              ],
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/generated/environment.render.ts"
+                }
+              ],
+              "outputHashing": "all"
+            },
             "development": {
               "extractLicenses": false,
               "optimization": false,

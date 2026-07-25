@@ -6,7 +6,7 @@ const UUID_PATTERN =
 const MAX_RANGE_DAYS = 366;
 
 export interface ParsedJobArguments {
-  command: 'dispatch' | 'replay' | 'run';
+  command: 'dispatch' | 'health' | 'replay' | 'run';
   jobType?: JobType;
   parameters: Readonly<Record<string, boolean | string>>;
   payloadId?: string;
@@ -14,12 +14,17 @@ export interface ParsedJobArguments {
 
 export function parseJobArguments(argv: readonly string[]): ParsedJobArguments {
   const command = argv[0];
-  if (command !== 'dispatch' && command !== 'replay' && command !== 'run') {
-    throw new Error('Expected one of: dispatch, replay, run');
+  if (
+    command !== 'dispatch' &&
+    command !== 'health' &&
+    command !== 'replay' &&
+    command !== 'run'
+  ) {
+    throw new Error('Expected one of: dispatch, health, replay, run');
   }
   const options = parseOptions(argv.slice(1));
 
-  if (command === 'dispatch') {
+  if (command === 'dispatch' || command === 'health') {
     rejectUnknown(options, new Set());
     return { command, parameters: {} };
   }

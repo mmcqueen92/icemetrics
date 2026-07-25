@@ -4,6 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { parseJobArguments } from './job-parameters.js';
 
 describe('parseJobArguments', () => {
+  it('parses the read-only operational health command', () => {
+    expect(parseJobArguments(['health'])).toEqual({
+      command: 'health',
+      parameters: {},
+    });
+  });
+
   it('parses a bounded manual job request', () => {
     expect(
       parseJobArguments([
