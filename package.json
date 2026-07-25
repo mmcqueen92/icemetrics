@@ -36,7 +36,7 @@
     "openapi:generate": "npm run openapi:generate --workspace @icemetrics/api && node scripts/generate-openapi-client.mjs",
     "security:audit": "npm audit --audit-level=critical",
     "test": "npm run test:unit",
-    "test:e2e": "node scripts/pass-not-ready.mjs \"Pass 10\" \"browser end-to-end testing\"",
+    "test:e2e": "npm run test:e2e --workspace @icemetrics/web",
     "test:integration": "npm run test:integration --workspace @icemetrics/api",
     "test:unit": "npm run test:unit --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",

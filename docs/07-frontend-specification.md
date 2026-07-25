@@ -15,6 +15,23 @@ Do not add NgRx or another global state library. Server data is loaded by
 feature facades/services and kept only as long as its route needs it. URL query
 parameters are the source of truth for shareable filters and comparisons.
 
+## Implemented Foundation
+
+Pass 10 provides the responsive application shell, semantic design tokens,
+Material/CDK interaction primitives, route progress, global unexpected-error
+notification, and lazy route boundaries for every top-level feature. The
+dashboard and feature routes intentionally render foundation copy until their
+API-driven views arrive in Passes 11 and 12.
+
+The generated API client is registered once through `provideApi` and uses the
+application `HttpClient`. The global interceptor reports only network and 5xx
+failures; expected 4xx feature errors remain local so their pages can render
+specific recovery guidance. Browser errors use the same non-blocking,
+dismissible notification boundary.
+
+Initial document navigation preserves normal browser tab order so the skip link
+is first. Subsequent client-side route changes move focus to the main landmark.
+
 ## Source Layout
 
 ```text

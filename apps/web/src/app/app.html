@@ -1,19 +1,47 @@
 <a class="skip-link" href="#main-content">Skip to main content</a>
 
 <header class="site-header">
-  <a class="brand" href="/" aria-label="IceMetrics home">
-    <span class="brand-mark" aria-hidden="true">IM</span>
-    <span>{{ title }}</span>
-  </a>
+  <div class="header-inner">
+    <a class="brand" routerLink="/" aria-label="IceMetrics home">
+      <span class="brand-mark" aria-hidden="true">IM</span>
+      <span>{{ title }}</span>
+    </a>
+
+    <nav aria-label="Primary navigation">
+      @for (item of navigation; track item.path) {
+      <a
+        mat-button
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: item.exact }"
+      >
+        {{ item.label }}
+      </a>
+      }
+    </nav>
+
+    <app-freshness-indicator
+      label="Stored data"
+      detail="Freshness is reported in each explorer"
+    />
+  </div>
 </header>
 
-<main id="main-content" class="page-shell">
-  <p class="eyebrow">Production-grade NHL analytics</p>
-  <h1>See the game beneath the score.</h1>
-  <p class="lede">
-    The application foundation is ready. Team, player, game, and analytics
-    experiences will be delivered as tested vertical slices in later passes.
-  </p>
+@if (navigationProgress.loading()) {
+<mat-progress-bar
+  class="route-progress"
+  mode="indeterminate"
+  aria-label="Loading page"
+/>
+}
 
+<app-global-error-notification />
+
+<main #mainContent id="main-content" class="page-shell" tabindex="-1">
   <router-outlet />
 </main>
+
+<footer class="site-footer">
+  <p>Independent NHL analytics. No league or team affiliation.</p>
+  <a routerLink="/about">About IceMetrics</a>
+</footer>

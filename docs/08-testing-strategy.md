@@ -58,10 +58,15 @@ Integration checks on every pull request after fast checks:
 npm run test:integration
 ```
 
-`npm run test:e2e` joins the pull-request gate when the browser harness is
-implemented in Pass 10. Each integration test file creates its own PostgreSQL
-17 Testcontainers instance with a unique database name and credentials; suites
-never use the local Compose database or share state.
+`npm run test:e2e` is a pull-request gate. It builds the production web
+application, serves those static assets from a process owned by Playwright, and
+runs the Chromium suite. The Pass 10 baseline covers keyboard navigation,
+client-side lazy routing, the in-app not-found path, and the 320 CSS pixel
+layout.
+
+Each integration test file creates its own PostgreSQL 17 Testcontainers instance
+with a unique database name and credentials; suites never use the local Compose
+database or share state.
 
 `main` and release candidates run the complete suite. Tests may be parallelized
 by suite but must not share a database.

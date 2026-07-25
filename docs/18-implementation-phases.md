@@ -160,6 +160,8 @@ Acceptance:
 
 ## Pass 10: Angular Foundation
 
+**Status:** Implemented and locally verified on 2026-07-25.
+
 Deliver application shell, routing, generated API client, design tokens, shared
 states/components, error handling, and accessibility baseline.
 

@@ -39,6 +39,12 @@
 
 Feature-specific composition remains inside its feature.
 
+Pass 10 implements the shell/navigation, button primitives, route progress,
+loading, empty, error, not-found, freshness, and global notification
+foundations. Page headers, filters, tables, selectors, status badges, metric
+tiles, charts, and dialogs are added with their first production consumer in
+Passes 11 and 12; do not create unused wrappers in advance.
+
 ## Color and Status
 
 Define semantic tokens rather than hard-coded colors:

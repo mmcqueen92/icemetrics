@@ -22,6 +22,16 @@ npm run dev
 `npm run dev` runs API and Angular development servers concurrently and stops
 both when the command exits.
 
+Before the first local browser-suite run, install its pinned Chromium runtime:
+
+```text
+npx playwright install chromium
+npm run test:e2e
+```
+
+The browser command builds and tests production web assets. CI installs the
+browser and its operating-system dependencies automatically.
+
 `db:migrate` is the development migration command. Clean environments and
 deployments may use `db:migrate:deploy` when they only need to apply committed
 migrations. Prisma CLI commands load the root `.env`; production still requires
@@ -42,7 +52,7 @@ The root `package.json` must provide:
 | `npm test` | Unit/component tests |
 | `npm run test:unit` | Unit and component tests |
 | `npm run test:integration` | PostgreSQL and API integration tests |
-| `npm run test:e2e` | Playwright tests |
+| `npm run test:e2e` | Production web build and Playwright tests |
 | `npm run format` | Write formatting changes |
 | `npm run format:check` | Verify formatting |
 | `npm run db:generate` | Generate Prisma client |

@@ -6,8 +6,8 @@ Initial production budgets:
 
 - API p95 under 500 ms and p99 under 1 second for normal read endpoints.
 - API response body under 1 MB; normal paginated responses under 250 KB.
-- Angular initial compressed JavaScript budget set by the Angular build to
-  500 KB warning and 750 KB error.
+- Angular initial bundle budget set by the Angular build to 500 KB warning and
+  750 KB error.
 - No synchronous request may invoke the NHL provider.
 - Hourly dispatcher should finish within 15 minutes under normal game-day load.
 
@@ -49,6 +49,10 @@ database, enforcing the 500 ms normal-read budget.
 - Use image/media assets only when licensed and appropriately sized.
 - Avoid rendering unbounded table rows.
 - Preserve chart data transformations as memoized pure functions.
+
+The Pass 10 production build emits each top-level feature as a lazy chunk. Its
+initial bundle is 330.00 KB raw with an 82.68 KB estimated transfer size, below
+the configured warning threshold.
 
 ## Scaling Triggers
 
